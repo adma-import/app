@@ -46,11 +46,13 @@ function aplicarPermisosPorRol(perfil) {
   });
   mostrarModulo('dashboard');
   if (permitidos.includes('config')) { initEscuchaUsuarios(); cargarLogoGuardado(); }
+  if (permitidos.includes('cotizaciones')) initEscuchaCotizaciones();
   initEscuchaTasas();
 }
 
 function alCerrarSesion() {
   detenerEscuchaUsuarios();
+  detenerEscuchaCotizaciones();
   if (desuscribirTasas) { desuscribirTasas(); desuscribirTasas = null; }
 }
 
