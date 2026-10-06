@@ -48,12 +48,14 @@ function aplicarPermisosPorRol(perfil) {
   if (permitidos.includes('config')) { initEscuchaUsuarios(); cargarLogoGuardado(); }
   if (permitidos.includes('cotizaciones')) initEscuchaCotizaciones();
   initEscuchaTasas();
+  initEscuchaDatos();
 }
 
 function alCerrarSesion() {
   detenerEscuchaUsuarios();
   detenerEscuchaCotizaciones();
   if (desuscribirTasas) { desuscribirTasas(); desuscribirTasas = null; }
+  if (desuscribirDatos) { desuscribirDatos(); desuscribirDatos = null; }
 }
 
 /* ---------- 3. Menú móvil y pestañas ---------- */
@@ -207,7 +209,7 @@ function initTasasUI() {
     try { await actualizarTasasAuto(true); } catch (err) { alert('No se pudieron consultar las tasas. Revisa tu conexión.'); }
     e.target.disabled = false;
   });
-  document.querySelectorAll('.tasa-card').forEach(card => {
+  document.querySelectorAll('.tasa-card[data-tasa]').forEach(card => {
     const k = card.dataset.tasa;
     card.querySelector('[data-guardar]').addEventListener('click', async () => {
       const v = parseFloat(card.querySelector('[data-input]').value);
@@ -224,6 +226,96 @@ function initTasasUI() {
   });
 }
 
+/* ---------- 6. Datos: fletes y comisión ADMA ----------
+   Documento Firestore: configuracion/datos
+   { fletes: [{ id, valor }], comisionAdma: 5 }
+   Global: DATOS.fletes, DATOS.comisionAdma (y evento 'datos-actualizados' en document). */
+const COMISION_ADMA_DEFECTO = 5;
+let DATOS = { fletes: [], comisionAdma: COMISION_ADMA_DEFECTO };
+let desuscribirDatos = null;
+const refDatos = () => db.collection(APP_CONFIG.COLECCIONES.configuracion).doc('datos');
+
+function pintarDatos(d) {
+  DATOS.fletes = Array.isArray(d.fletes) ? d.fletes : [];
+  DATOS.comisionAdma = typeof d.comisionAdma === 'number' ? d.comisionAdma : COMISION_ADMA_DEFECTO;
+
+  const lista = document.getElementById('listaFletes');
+  lista.replaceChildren();
+  if (!DATOS.fletes.length) {
+    const p = document.createElement('p');
+    p.className = 'lista-vacia'; p.textContent = 'Aún no hay fletes.';
+    lista.appendChild(p);
+  }
+  DATOS.fletes.forEach(f => {
+    const fila = document.createElement('div');
+    fila.setAttribute('role', 'listitem');
+    fila.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:var(--s3);padding:var(--s2) 0;border-bottom:1px solid var(--border)';
+    const txt = document.createElement('span');
+    txt.textContent = Number(f.valor).toLocaleString('es-CO', { maximumFractionDigits: 2 });
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'btn secundario btn-chico'; del.textContent = 'Eliminar';
+    del.setAttribute('aria-label', `Eliminar flete ${f.valor}`);
+    del.addEventListener('click', () => eliminarFlete(f));
+    fila.append(txt, del);
+    lista.appendChild(fila);
+  });
+
+  document.getElementById('comisionValor').textContent =
+    DATOS.comisionAdma.toLocaleString('es-CO', { maximumFractionDigits: 2 }) + ' %';
+  document.dispatchEvent(new CustomEvent('datos-actualizados', { detail: { ...DATOS } }));
+}
+
+function initEscuchaDatos() {
+  if (desuscribirDatos) desuscribirDatos();
+  desuscribirDatos = refDatos().onSnapshot(s => pintarDatos(s.exists ? s.data() : {}),
+    err => console.error('Error al leer datos (fletes/comisión):', err));
+}
+
+async function agregarFlete() {
+  const valorEl = document.getElementById('fleteValor');
+  const valor = parseFloat(valorEl.value);
+  if (!(valor >= 0)) { alert('Escribe un valor válido para el flete.'); return; }
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  try {
+    await refDatos().set({ fletes: firebase.firestore.FieldValue.arrayUnion({ id, valor }) }, { merge: true });
+    valorEl.value = '';
+  } catch (err) { console.error(err); alert('No se pudo guardar el flete.'); }
+}
+
+async function eliminarFlete(f) {
+  if (!confirm(`¿Eliminar el flete ${f.valor}? Las cotizaciones que ya lo usan conservan su valor.`)) return;
+  try { await refDatos().update({ fletes: firebase.firestore.FieldValue.arrayRemove(f) }); }
+  catch (err) { console.error(err); alert('No se pudo eliminar el flete.'); }
+}
+
+async function guardarComision() {
+  const input = document.getElementById('comisionInput');
+  const v = parseFloat(input.value);
+  if (!(v >= 0 && v <= 100)) { alert('Escribe un porcentaje entre 0 y 100.'); return; }
+  try { await refDatos().set({ comisionAdma: v }, { merge: true }); input.value = ''; }
+  catch (err) { console.error(err); alert('No se pudo guardar la comisión.'); }
+}
+
+/* Acordeón de Configuración > Datos: todo colapsado; al abrir una fila se cierran las demás. */
+function initAcordeonDatos() {
+  const btns = [...document.querySelectorAll('#panel-datos .acordeon-btn')];
+  const fijar = (b, abierto) => {
+    b.setAttribute('aria-expanded', String(abierto));
+    document.getElementById(b.getAttribute('aria-controls')).hidden = !abierto;
+  };
+  btns.forEach(b => b.addEventListener('click', () => {
+    const abrir = b.getAttribute('aria-expanded') !== 'true';
+    btns.forEach(o => fijar(o, false));
+    fijar(b, abrir);
+  }));
+}
+
+function initDatosUI() {
+  initAcordeonDatos();
+  document.getElementById('btnAgregarFlete').addEventListener('click', agregarFlete);
+  document.getElementById('btnGuardarComision').addEventListener('click', guardarComision);
+}
+
 /* ---------- Inicialización ---------- */
 document.addEventListener('DOMContentLoaded', () => {
   crearModulosDinamicos();
@@ -231,5 +323,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initMenuMovil();
   initPestanas();
   initTasasUI();
+  initDatosUI();
   document.getElementById('logo-file').addEventListener('change', manejarSeleccionLogo);
 });
