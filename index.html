@@ -109,10 +109,10 @@
       <div class="tabpanel" id="panel-datos" role="tabpanel" aria-labelledby="tab-datos" hidden>
         <div class="panel">
           <div class="cabecera">
-            <h2 style="border:none;background:none;padding:0">Tasas de cambio</h2>
+            <h2 style="border:none;background:none;padding:0"><button type="button" class="acordeon-btn" aria-expanded="false" aria-controls="cuerpoTasas">Tasas de cambio</button></h2>
             <button class="btn secundario btn-chico" type="button" id="btnActualizarTasas">Actualizar ahora</button>
           </div>
-          <div class="cuerpo">
+          <div class="cuerpo" id="cuerpoTasas" hidden>
             <p class="tasa-meta" style="margin-bottom:var(--s4)">Se actualizan solas una vez al día. Si escribes un valor manual, ese valor se mantiene hasta que vuelvas al modo automático.</p>
             <div class="tasas-grid">
               <div class="tasa-card" data-tasa="usdCop">
@@ -129,6 +129,30 @@
                   <button class="btn btn-chico" type="button" data-guardar>Guardar manual</button>
                   <button class="btn secundario btn-chico" type="button" data-auto>Volver a automático</button></div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:var(--s4)">
+          <div class="cabecera"><h2 style="border:none;background:none;padding:0"><button type="button" class="acordeon-btn" aria-expanded="false" aria-controls="cuerpoFletes">Fletes</button></h2></div>
+          <div class="cuerpo" id="cuerpoFletes" hidden>
+            <p class="tasa-meta" style="margin-bottom:var(--s4)">Agrega los valores de flete disponibles. Aparecen en el formulario de costos de cada cotización.</p>
+            <div class="tasa-form" style="margin-bottom:var(--s4)">
+              <input type="number" id="fleteValor" step="0.01" min="0" placeholder="Valor" aria-label="Valor del flete">
+              <button class="btn btn-chico" type="button" id="btnAgregarFlete">Agregar flete</button>
+            </div>
+            <div id="listaFletes" role="list"><p class="lista-vacia">Aún no hay fletes.</p></div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:var(--s4)">
+          <div class="cabecera"><h2 style="border:none;background:none;padding:0"><button type="button" class="acordeon-btn" aria-expanded="false" aria-controls="cuerpoComision">Comisión ADMA</button></h2></div>
+          <div class="cuerpo" id="cuerpoComision" hidden>
+            <div class="tasa-card">
+              <h3>Porcentaje de comisión</h3>
+              <div class="tasa-valor" id="comisionValor">5 %</div>
+              <div class="tasa-form"><input type="number" step="0.01" min="0" max="100" id="comisionInput" placeholder="Nuevo porcentaje" aria-label="Nuevo porcentaje de comisión ADMA">
+                <button class="btn btn-chico" type="button" id="btnGuardarComision">Guardar</button></div>
             </div>
           </div>
         </div>
