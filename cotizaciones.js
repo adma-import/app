@@ -3,7 +3,8 @@
    {
      cliente, descripcion, cantidad, link, imagenes: [dataURL JPEG comprimido],
      estado: 'pendiente' | 'cotizada' | 'finalizada',
-     costos: { valorUnidad, unidadesPorCaja, aumentoRmb, cbmCaja },
+     costos: { totalUnidades, valorUnidad, aumentoRmb (por unidad), unidadesPorCaja, cbmCaja, fleteId, fleteValor, pesoCaja, broker,
+               comisionPct, usdCop, usdRmb  <- comisión y tasas vigentes al guardar, para que la cotización no cambie después },
      creadoPor, creadoEn
    }
    Las imágenes se comprimen y se guardan como base64 dentro del documento
@@ -61,10 +62,14 @@ function cotConstruirUI() {
       <div class="modal-cabecera"><h2 id="cotCostosTitulo">Costos</h2>
         <button type="button" class="modal-cerrar" data-cot-cerrar aria-label="Cerrar">✕</button></div>
       <div id="cotErrorCostos" class="login-error" role="alert" hidden></div>
+      <label class="login-campo"><span>Total de unidades cotizadas</span><input type="number" id="cotTotalUnidades" min="1" step="1" required></label>
       <label class="login-campo"><span>Valor por unidad del producto (RMB)</span><input type="number" id="cotValorUnidad" min="0" step="0.01" required></label>
-      <label class="login-campo"><span>Cantidad de unidades por caja</span><input type="number" id="cotUnidadesCaja" min="1" step="1" required></label>
       <label class="login-campo"><span>Aumento de RMB por unidad</span><input type="number" id="cotAumento" min="0" step="0.01" required></label>
+      <label class="login-campo"><span>Unidades por caja</span><input type="number" id="cotUnidadesCaja" min="1" step="1" required></label>
       <label class="login-campo"><span>CBM por caja</span><input type="number" id="cotCbm" min="0" step="0.0001" required></label>
+      <label class="login-campo"><span>Precio del flete</span><select id="cotFlete" required></select></label>
+      <label class="login-campo"><span>Peso por caja (kg)</span><input type="number" id="cotPesoCaja" min="0" step="0.01" required></label>
+      <label class="login-campo"><span>Broker</span><input type="text" id="cotBroker" autocomplete="off"></label>
       <div class="modal-acciones">
         <button type="button" class="btn secundario" data-cot-cerrar>Cancelar</button>
         <button type="submit" class="btn" id="cotBtnGuardarCostos">Guardar</button>
@@ -165,6 +170,15 @@ async function cotGuardarNueva(e) {
 }
 
 /* ---------- Costos (botón Continuar) ---------- */
+/* Fletes de Configuración > Datos; si la cotización ya usaba uno que luego se borró, se conserva su copia guardada. */
+function cotFletesDisponibles(c) {
+  const lista = (typeof DATOS !== 'undefined' ? DATOS.fletes : []).slice();
+  const k = c && c.costos;
+  if (k && k.fleteId && !lista.some(f => f.id === k.fleteId))
+    lista.push({ id: k.fleteId, valor: k.fleteValor });
+  return lista;
+}
+
 function cotAbrirCostos(id) {
   const c = cotLista.find(x => x.id === id);
   if (!c) return;
@@ -172,26 +186,49 @@ function cotAbrirCostos(id) {
   document.getElementById('cotFormCostos').reset();
   cotError('cotErrorCostos', '');
   document.getElementById('cotCostosTitulo').textContent = 'Costos · ' + c.cliente;
-  if (c.costos) {
-    document.getElementById('cotValorUnidad').value = c.costos.valorUnidad;
-    document.getElementById('cotUnidadesCaja').value = c.costos.unidadesPorCaja;
-    document.getElementById('cotAumento').value = c.costos.aumentoRmb;
-    document.getElementById('cotCbm').value = c.costos.cbmCaja;
-  }
+
+  const sel = document.getElementById('cotFlete');
+  const fletes = cotFletesDisponibles(c);
+  sel.innerHTML = '<option value="">Selecciona un flete…</option>' +
+    fletes.map(f => `<option value="${cotEsc(f.id)}">${cotNum(f.valor)}</option>`).join('');
+  if (!fletes.length) cotError('cotErrorCostos', 'Aún no hay fletes. Agrégalos en Configuración > Datos.');
+
+  const k = c.costos || {};
+  document.getElementById('cotTotalUnidades').value = k.totalUnidades ?? c.cantidad ?? '';
+  document.getElementById('cotValorUnidad').value = k.valorUnidad ?? '';
+  document.getElementById('cotAumento').value = k.aumentoRmb ?? '';
+  document.getElementById('cotUnidadesCaja').value = k.unidadesPorCaja ?? '';
+  document.getElementById('cotCbm').value = k.cbmCaja ?? '';
+  document.getElementById('cotPesoCaja').value = k.pesoCaja ?? '';
+  document.getElementById('cotBroker').value = k.broker ?? '';
+  if (k.fleteId) sel.value = k.fleteId;
   cotAbrir('cotModalCostos');
-  document.getElementById('cotValorUnidad').focus();
+  document.getElementById('cotTotalUnidades').focus();
 }
 
 async function cotGuardarCostos(e) {
   e.preventDefault();
+  const c = cotLista.find(x => x.id === cotEditandoId);
+  const flete = cotFletesDisponibles(c).find(f => f.id === document.getElementById('cotFlete').value);
+  if (typeof TASAS === 'undefined' || !(TASAS.usdCop > 0) || !(TASAS.usdRmb > 0))
+    return cotError('cotErrorCostos', 'Aún no se cargan las tasas de cambio. Espera un momento e inténtalo de nuevo.');
   const costos = {
+    totalUnidades: parseInt(document.getElementById('cotTotalUnidades').value, 10),
     valorUnidad: parseFloat(document.getElementById('cotValorUnidad').value),
-    unidadesPorCaja: parseInt(document.getElementById('cotUnidadesCaja').value, 10),
     aumentoRmb: parseFloat(document.getElementById('cotAumento').value),
-    cbmCaja: parseFloat(document.getElementById('cotCbm').value)
+    unidadesPorCaja: parseInt(document.getElementById('cotUnidadesCaja').value, 10),
+    cbmCaja: parseFloat(document.getElementById('cotCbm').value),
+    fleteId: flete ? flete.id : '',
+    fleteValor: flete ? Number(flete.valor) : null,
+    pesoCaja: parseFloat(document.getElementById('cotPesoCaja').value),
+    broker: document.getElementById('cotBroker').value.trim(),
+    comisionPct: DATOS.comisionAdma,
+    usdCop: TASAS.usdCop,
+    usdRmb: TASAS.usdRmb
   };
-  if (!(costos.valorUnidad >= 0) || !(costos.unidadesPorCaja > 0) || !(costos.aumentoRmb >= 0) || !(costos.cbmCaja >= 0))
-    return cotError('cotErrorCostos', 'Completa los cuatro campos con valores válidos.');
+  if (!(costos.totalUnidades > 0) || !(costos.valorUnidad >= 0) || !(costos.aumentoRmb >= 0) || !(costos.unidadesPorCaja > 0) ||
+      !(costos.cbmCaja >= 0) || !flete || !(costos.pesoCaja >= 0))
+    return cotError('cotErrorCostos', 'Completa todos los campos con valores válidos y elige un flete.');
 
   const btn = document.getElementById('cotBtnGuardarCostos');
   btn.disabled = true;
@@ -221,12 +258,67 @@ const COT_ESTADOS = {
 };
 const cotEstadoDe = c => c.estado === 'costeada' ? 'cotizada' : (COT_ESTADOS[c.estado] ? c.estado : 'pendiente');
 
+/* Cálculos del resumen. Usa la comisión y las tasas guardadas con la cotización; lo que no se pueda calcular (datos faltantes) se omite. */
+const cotOk = v => typeof v === 'number' && !Number.isNaN(v);
 function cotCalculos(c) {
   const k = c.costos;
   if (!k) return null;
-  const precioUnidad = k.valorUnidad + k.aumentoRmb;
-  const cajas = Math.ceil(c.cantidad / k.unidadesPorCaja);
-  return { precioUnidad, totalRmb: precioUnidad * c.cantidad, cajas, cbmTotal: cajas * k.cbmCaja };
+  const u = cotOk(k.totalUnidades) && k.totalUnidades > 0 ? k.totalUnidades : c.cantidad;
+  const r = { unidades: u };
+  if (cotOk(k.unidadesPorCaja) && k.unidadesPorCaja > 0) r.cajas = Math.ceil(u / k.unidadesPorCaja);
+  if (cotOk(k.valorUnidad) && cotOk(k.aumentoRmb)) {
+    r.precioUnidad = k.valorUnidad + k.aumentoRmb;
+    if (cotOk(k.comisionPct)) {
+      r.comisionPct = k.comisionPct;
+      r.comision = r.precioUnidad * k.comisionPct / 100;
+      r.totalUnitario = r.comision + r.precioUnidad;
+      r.totalRmb = u * r.totalUnitario;
+    }
+  }
+  if (r.cajas != null && cotOk(k.cbmCaja)) {
+    r.cbmTotal = k.cbmCaja * r.cajas;
+    if (cotOk(k.fleteValor)) { r.logistica360 = k.fleteValor * r.cbmTotal; r.logisticaUnit = r.logistica360 / u; }
+  }
+  if (r.totalRmb != null && cotOk(k.usdRmb) && k.usdRmb > 0 && cotOk(k.usdCop)) {
+    r.totalCop = (r.totalRmb / k.usdRmb) * k.usdCop;
+    r.precioUnitCop = r.totalCop / u;
+    if (r.logisticaUnit != null) r.totalUnitCop = r.precioUnitCop + r.logisticaUnit;
+    if (r.logistica360 != null) {
+      r.totalConFlete = r.totalCop + r.logistica360;
+      r.unitConFlete = r.totalConFlete / u;
+    }
+  }
+  return r;
+}
+
+/* Resumen en tres grupos: [{ titulo, lineas: [[etiqueta, valor], ...] }] para la tarjeta y el PDF. */
+function cotLineasCostos(c) {
+  const r = cotCalculos(c);
+  if (!r) return [];
+  const grupo = (titulo, defs) => ({
+    titulo,
+    lineas: defs.filter(([, v]) => v != null).map(([txt, v, dec, suf = '']) => [txt, cotNum(v, dec) + suf])
+  });
+  const pct = r.comisionPct != null ? cotNum(r.comisionPct, 2) + '% ' : '';
+  return [
+    grupo('PRECIO PRODUCTO', [
+      ['Unidades cotizadas', r.unidades, 0],
+      ['Precio por unidad', r.precioUnidad, 2, ' RMB'],
+      [`Comisión del ${pct}ADMA`, r.comision, 2, ' RMB'],
+      ['Valor por unidad', r.totalUnitario, 2, ' RMB'],
+      ['Total', r.totalRmb, 2, ' RMB']
+    ]),
+    grupo('FLETE', [
+      ['CBM', r.cbmTotal, 4],
+      ['Logística unitaria en COP', r.logisticaUnit, 2, ' COP'],
+      ['Logística 360 COP', r.logistica360, 2, ' COP']
+    ]),
+    grupo('RESUMEN', [
+      ['Valor total del producto sin flete', r.totalCop, 2, ' COP'],
+      ['Valor total del producto con flete', r.totalConFlete, 2, ' COP'],
+      ['Valor por unidad del producto con flete', r.unitConFlete, 2, ' COP']
+    ])
+  ].filter(g => g.lineas.length);
 }
 
 /* ---------- Tarjetas ---------- */
@@ -240,8 +332,7 @@ function cotPintar() {
     const est = cotEstadoDe(c);
     const link = cotLinkSeguro(c.link);
     const k = c.costos;
-    const costos = k
-      ? `<p class="cot-costos">${cotNum(k.valorUnidad)} RMB/u · +${cotNum(k.aumentoRmb)} RMB · ${cotNum(k.unidadesPorCaja, 0)} u/caja · ${cotNum(k.cbmCaja, 4)} CBM/caja</p>` : '';
+    const costos = k ? cotLineasCostos(c).map(g => `<p class="cot-costos"><strong>${cotEsc(g.titulo)}</strong><br>${g.lineas.map(([a, b]) => `${cotEsc(a)}: ${cotEsc(b)}`).join('<br>')}</p>`).join('') : '';
 
     let botones = `<button type="button" class="btn secundario btn-chico" data-cot-pdf="${c.id}" data-tipo="cotizar">A cotizar - Generar PDF</button>`;
     if (est === 'pendiente') {
@@ -313,18 +404,13 @@ async function cotGenerarPDF(id, tipo) {
     doc.setTextColor(30, 41, 59); y += 4;
   }
 
-  const calc = cotCalculos(c);
-  if (calc && (tipo === 'cotizacion' || tipo === 'orden')) {
-    const k = c.costos;
+  if (c.costos && (tipo === 'cotizacion' || tipo === 'orden')) {
     escribir('Costos', 10, 'bold');
-    escribir(`Valor por unidad: ${cotNum(k.valorUnidad)} RMB`, 12);
-    escribir(`Aumento por unidad: ${cotNum(k.aumentoRmb)} RMB`, 12);
-    escribir(`Precio por unidad: ${cotNum(calc.precioUnidad)} RMB`, 12, 'bold');
-    escribir(`Total: ${cotNum(calc.totalRmb)} RMB`, 12, 'bold'); y += 2;
-    escribir(`Unidades por caja: ${cotNum(k.unidadesPorCaja, 0)}`, 12);
-    escribir(`Cajas: ${cotNum(calc.cajas, 0)}`, 12);
-    escribir(`CBM por caja: ${cotNum(k.cbmCaja, 4)}`, 12);
-    escribir(`CBM total: ${cotNum(calc.cbmTotal, 4)}`, 12); y += 4;
+    cotLineasCostos(c).forEach(g => {
+      y += 2; escribir(g.titulo, 11, 'bold');
+      g.lineas.forEach(([a, b]) => escribir(`${a}: ${b}`, 12));
+    });
+    y += 4;
   }
 
   const imgs = c.imagenes || [];
