@@ -23,9 +23,8 @@ const APP_CONFIG = {
      Para agregar un módulo nuevo: añádelo aquí (y crea su <section id="id">). */
 MODULOS: [
   { id: 'cotizaciones', nombre: 'Cotizaciones' },
-  { id: 'importaciones', nombre: 'Importaciones' },
-  { id: 'proveedores', nombre: 'Proveedores' },
-  { id: 'costos', nombre: 'Costos' }
+  { id: 'adma-company', nombre: 'Adma Company' },
+  { id: 'groupack', nombre: 'Groupack' }
 ],
 
   LOGO_MAX_BYTES: 700 * 1024, // Firestore limita cada documento a 1 MB y base64 pesa ~33% más
