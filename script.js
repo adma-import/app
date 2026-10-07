@@ -35,8 +35,8 @@ function initNavegacion() {
 /* ---------- 2. Permisos por rol (los llama auth.js al conocer el perfil) ---------- */
 function modulosPermitidos(perfil) {
   const R = APP_CONFIG.ROLES;
-  if (perfil.rol === R.SUPER || perfil.rol === R.ADMIN) return ['dashboard', 'config', ...APP_CONFIG.MODULOS.map(m => m.id)];
-  return ['dashboard', ...(perfil.modulos || [])];
+  if (perfil.rol === R.SUPER || perfil.rol === R.ADMIN) return ['config', ...APP_CONFIG.MODULOS.map(m => m.id)];
+  return [...(perfil.modulos || [])];
 }
 
 function aplicarPermisosPorRol(perfil) {
@@ -44,7 +44,8 @@ function aplicarPermisosPorRol(perfil) {
   document.querySelectorAll(APP_CONFIG.SELECTORES.enlacesNav).forEach(a => {
     if (a.dataset.mod) a.style.display = permitidos.includes(a.dataset.mod) ? '' : 'none';
   });
-  mostrarModulo('dashboard');
+  const primero = APP_CONFIG.MODULOS.find(m => permitidos.includes(m.id));
+  mostrarModulo(primero ? primero.id : (permitidos.includes('config') ? 'config' : ''));
   if (permitidos.includes('config')) { initEscuchaUsuarios(); cargarLogoGuardado(); }
   if (permitidos.includes('cotizaciones')) initEscuchaCotizaciones();
   initEscuchaTasas();
@@ -185,10 +186,7 @@ TASAS.usdRmb = d.usdRmb ? d.usdRmb.valor : null;
 TASAS.rmbCop = TASAS.usdCop && TASAS.usdRmb ? Number((TASAS.usdCop / TASAS.usdRmb).toFixed(2)) : null;
 TASAS.fecha = d.usdCop ? d.usdCop.fecha : null;
 
-const dash = { usdCop: ['dashUsdCop', 'dashUsdCopMeta'], usdRmb: ['dashUsdRmb', 'dashUsdRmbMeta'] };
 ['usdCop', 'usdRmb'].forEach(k => {
-    document.getElementById(dash[k][0]).textContent = fmtTasa(k, TASAS[k]);
-    document.getElementById(dash[k][1]).textContent = metaTasa(d[k]);
     const card = document.querySelector(`.tasa-card[data-tasa="${k}"]`);
     card.querySelector('[data-valor]').textContent = fmtTasa(k, TASAS[k]);
     card.querySelector('[data-meta]').textContent = metaTasa(d[k]);
