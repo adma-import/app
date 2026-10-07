@@ -73,3 +73,36 @@
 @media (max-width: 600px) {
   .cot-fab { right: 16px; bottom: 16px; }
 }
+
+/* ===== v2: tarjetas compactas, buscador, origen ===== */
+[hidden] { display: none !important; } /* .login-campo (display:flex) anulaba el atributo hidden */
+.cot-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.cot-filtros { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
+.cot-filtros input, .cot-filtros select { min-height: 40px; padding: 0 12px; border: 1px solid var(--border, #ccc); border-radius: 8px; font: inherit; background: #fff; }
+.cot-filtros input { flex: 1; min-width: 220px; max-width: 420px; }
+.cot-conteo { flex-basis: 100%; margin: 0; font-size: .8rem; color: var(--text-muted, #475569); }
+.cot-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; align-items: start; }
+.cot-card { padding: 0; gap: 0; overflow: hidden; }
+.cot-card.abierta { grid-column: 1 / -1; }
+.cot-resumen { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; background: none; border: 0; cursor: pointer; font: inherit; color: inherit; text-align: left; }
+.cot-resumen:focus-visible { outline: 3px solid #93c5fd; outline-offset: -3px; }
+.cot-foto { width: 48px; height: 48px; flex-shrink: 0; object-fit: cover; border-radius: 8px; border: 1px solid rgba(0,0,0,.12); background: rgba(255,255,255,.6); }
+.cot-resumen-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cot-resumen-txt strong, .cot-articulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cot-articulo { font-size: .85rem; opacity: .8; }
+.cot-detalle { padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(0,0,0,.08); }
+.cot-detalle .cot-dato, .cot-detalle p { overflow-wrap: anywhere; }
+.cot-aumento { display: flex; gap: 8px; }
+.cot-aumento select { flex: 0 0 auto; width: auto; }
+.cot-aumento input { flex: 1; min-width: 0; }
+
+/* ===== v3: campos numéricos sin flechas (solo se escribe el valor) ===== */
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.cot-calc { margin: -4px 0 0; color: var(--text-muted, #475569); }
+
+/* ===== v4: selección múltiple y Excel ===== */
+.cot-card { position: relative; }
+.cot-sel { position: absolute; left: 12px; top: 20px; width: 18px; height: 18px; z-index: 1; cursor: pointer; }
+.cot-seleccionable .cot-resumen { padding-left: 40px; }
+.cot-acciones { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
