@@ -89,7 +89,7 @@ function cotConstruirUI() {
       <label class="login-campo"><span>Vía de transporte</span><select id="cotVia" required><option value="maritima">Marítima</option><option value="aerea">Aérea</option></select></label>
       <label class="login-campo" id="cotFleteWrap"><span>Precio del flete marítimo (COP por m³)</span><select id="cotFlete"></select></label>
       <label class="login-campo" id="cotFleteAereoWrap" hidden><span>Valor total del flete aéreo (USD)</span><input type="number" id="cotFleteAereo" min="0" step="0.01"></label>
-      <label class="login-campo"><span>Peso por caja (kg)</span><input type="number" id="cotPesoCaja" min="0" step="0.01" required></label>
+      <label class="login-campo"><span>Peso por caja (kg)</span><input type="number" id="cotPesoCaja" min="0" step="0.01" ></label>
       <label class="login-campo"><span>Broker</span><input type="text" id="cotBroker" autocomplete="off"></label>
       <div class="login-campo"><span>Imágenes reales cotizadas (máx. ${COT_MAX_IMAGENES}) — se usarán en el PDF de cotización</span>
         <input type="file" id="cotArchivosReales" accept="image/*" multiple>
