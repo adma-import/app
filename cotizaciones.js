@@ -38,8 +38,8 @@ function cotConstruirUI() {
     <div class="cot-barra"><h2 class="cot-titulo">Cotizaciones</h2>
       <div class="cot-filtros">
         <input type="search" id="cotBuscar" placeholder="Buscar por cliente, producto, comercial, estado…" aria-label="Buscar cotizaciones" autocomplete="off">
-        <select id="cotFiltroEstado" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option value="pendiente">Pendiente</option><option value="cotizada">Cotizada</option><option value="finalizada">Finalizada</option></select>
-        <select id="cotFiltroOrigen" aria-label="Filtrar por origen"><option value="">Todos los orígenes</option><option>Adma Company</option><option>Groupack</option></select>
+        <select id="cotFiltroEstado" aria-label="Filtrar por estado"><option value="">Filtrar por estado</option><option value="pendiente">Pendiente</option><option value="cotizada">Cotizada</option><option value="finalizada">Finalizada</option></select>
+        <select id="cotFiltroOrigen" aria-label="Filtrar por origen"><option value="">Filtrar por empresa</option><option>Adma Company</option><option>Groupack</option></select>
       </div>
       <p id="cotConteo" class="cot-conteo" aria-live="polite"></p>
       <div class="cot-acciones">
