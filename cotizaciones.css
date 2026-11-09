@@ -80,6 +80,11 @@
 .cot-filtros { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
 .cot-filtros input, .cot-filtros select { min-height: 40px; padding: 0 12px; border: 1px solid var(--border, #ccc); border-radius: 8px; font: inherit; background: #fff; }
 .cot-filtros input { flex: 1; min-width: 220px; max-width: 420px; }
+.cot-paginacion { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; font-size: .85rem; color: var(--text-muted, #475569); }
+.cot-pag-tam { display: flex; align-items: center; gap: 8px; }
+.cot-pag-tam select { min-height: 36px; padding: 0 8px; border: 1px solid var(--border, #ccc); border-radius: 8px; font: inherit; background: #fff; }
+.cot-pag-nav { display: flex; align-items: center; gap: 10px; }
+.cot-pag-nav button:disabled { opacity: .5; cursor: not-allowed; }
 .cot-conteo { flex-basis: 100%; margin: 0; font-size: .8rem; color: var(--text-muted, #475569); }
 .cot-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; align-items: start; }
 .cot-card { padding: 0; gap: 0; overflow: hidden; }

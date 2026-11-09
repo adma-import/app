@@ -1,0 +1,12 @@
+{
+  "hosting": {
+    "site": "adma-1242a",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}

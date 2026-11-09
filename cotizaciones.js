@@ -676,6 +676,26 @@ const COT_ICONOS = {
   editar: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   borrar: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>'
 };
+/* Paginación de la tabla (10 / 50 / 100 por página) */
+const COT_OPCIONES_PAGINA = [10, 50, 100];
+let cotPorPagina = 10, cotPagina = 1;
+function cotPaginar(lista) {
+  const paginas = Math.max(1, Math.ceil(lista.length / cotPorPagina));
+  cotPagina = Math.min(Math.max(1, cotPagina), paginas);
+  const ini = (cotPagina - 1) * cotPorPagina;
+  return { filas: lista.slice(ini, ini + cotPorPagina), paginas, ini };
+}
+function cotControlesPagina(total, pag) {
+  const fin = pag.ini + pag.filas.length;
+  return `<div class="cot-paginacion">
+    <label class="cot-pag-tam"><span>Filas por página</span><select data-cot-por-pagina aria-label="Filas por página">${COT_OPCIONES_PAGINA.map(n => `<option value="${n}"${n === cotPorPagina ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+    <span class="cot-pag-info">${pag.ini + 1}–${fin} de ${total}</span>
+    <div class="cot-pag-nav">
+      <button type="button" class="btn btn-chico secundario" data-cot-pag="prev"${cotPagina <= 1 ? ' disabled' : ''}>Anterior</button>
+      <span class="cot-pag-num">Página ${cotPagina} de ${pag.paginas}</span>
+      <button type="button" class="btn btn-chico secundario" data-cot-pag="next"${cotPagina >= pag.paginas ? ' disabled' : ''}>Siguiente</button>
+    </div></div>`;
+}
 function cotPintar() {
   cotActualizarAcciones();
   const grid = document.getElementById('cotGrid');
@@ -692,7 +712,8 @@ function cotPintar() {
     return;
   }
   const ico = n => `<svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS[n]}</svg>`;
-  const filas = lista.map(c => {
+  const pag = cotPaginar(lista);
+  const filas = pag.filas.map(c => {
     const est = cotEstadoDe(c);
     const puedeModulo = est === 'cotizada' || (est === 'finalizada' && !c.modulo);
     const etiquetaEditar = est === 'pendiente' ? 'Continuar: llenar los costos' : 'Editar costos';
@@ -718,7 +739,7 @@ function cotPintar() {
 
   grid.innerHTML = `<div class="cot-tabla-card"><table class="cot-tabla">
     <thead><tr><th class="cot-col-sel"><span class="sr-only">Seleccionar</span></th><th>Cliente</th><th>Producto</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
-    <tbody>${filas}</tbody></table></div>`;
+    <tbody>${filas}</tbody></table></div>${cotControlesPagina(lista.length, pag)}`;
 }
 
 function cotAlternar(id) {
@@ -2179,7 +2200,7 @@ function cotSeleccionar(id, marcar) {
 }
 function cotSeleccionarVisibles() {
   cotSeleccion.clear();
-  cotFiltradas().forEach(c => cotSeleccion.add(c.id));
+  cotPaginar(cotFiltradas()).filas.forEach(c => cotSeleccion.add(c.id));
   cotPintar();
 }
 
@@ -2618,7 +2639,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('cotAumento').placeholder = e.target.value === 'porcentaje' ? '% sobre el total' : 'RMB por unidad';
   });
   ['cotBuscar', 'cotFiltroEstado', 'cotFiltroOrigen'].forEach(id =>
-    document.getElementById(id).addEventListener(id === 'cotBuscar' ? 'input' : 'change', cotPintar));
+    document.getElementById(id).addEventListener(id === 'cotBuscar' ? 'input' : 'change', () => { cotPagina = 1; cotPintar(); }));
+  document.getElementById('cotGrid').addEventListener('change', e => {
+    const s = e.target.closest('[data-cot-por-pagina]');
+    if (!s) return;
+    cotPorPagina = Number(s.value) || 10; cotPagina = 1; cotPintar();
+  });
+  document.getElementById('cotGrid').addEventListener('click', e => {
+    const b = e.target.closest('[data-cot-pag]');
+    if (!b || b.disabled) return;
+    cotPagina += b.dataset.cotPag === 'next' ? 1 : -1; cotPintar();
+  });
 
   document.getElementById('cotGrid').addEventListener('change', e => {
     const cb = e.target.closest('[data-cot-sel]');
