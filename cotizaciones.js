@@ -1386,7 +1386,7 @@ async function cotGenerarExcelGrupal(lista) {
     '➢ Cotización no incluye Fulfillment',
     '➢Valor es hasta la ciudad de Cali',
     '➢Confirmar aprobación de la cotización',
-    '➢El tiempo de entrega maritimo es de 60 días y aereo es de 15 dias a partir de que la mercancía se encuentre en la bodega en origen',
+    '➢El tiempo de entrega maritimo es de 90 días y aereo es de 15 dias a partir de que la mercancía se encuentre en la bodega en origen',
     '➢Se calcula la tasa del dólar del día que realice el pago',
     '➢Valor sujeto a cambio de acuerdo con el comportamiento del flete'
   ].forEach((t, i) => { ws.getRow(T0 + 2 + i * 2).height = 24; poner(`C${T0 + 2 + i * 2}`, t, { tam: 16, h: 'left', ajustar: false }); });
@@ -1457,7 +1457,7 @@ async function cotGenerarExcelGrupalUna(c) {
     for (const col of 'BCDE') ws.getCell(`${col}${n}`).border = caja;
   });
   fila(14);
-  const tiempo = aereo ? '15 días' : '60 días';
+  const tiempo = aereo ? '15 días' : '90 días';
   const cod = `COT-${String(c.id || '').slice(0, 5).toUpperCase()}`;
   const izq = [['Condiciones de Pago', 'Contado'], ['EMPRESA', 'Groupack'], ['Contacto', ''], ['Modalidad', aereo ? 'Aereo' : 'Maritimo']];
   const der = [['No. Cotización', cod], ['Fecha', new Date(Date.UTC(hoy[0], hoy[1] - 1, hoy[2]))], ['Validez', ''], ['Tiempo de entrega estimado', tiempo]];
@@ -1532,7 +1532,7 @@ async function cotGenerarExcelGrupalUna(c) {
     'Cotización no incluye Fulfillment',
     'Confirmar aprobación de la cotización',
     aereo ? 'El tiempo de entrega Aerea es a partir de 15 dias que la mercancía se encuentre en la bodega en origen'
-          : 'El tiempo de entrega Maritima es a partir de 60 dias que la mercancía se encuentre en la bodega en origen',
+          : 'El tiempo de entrega Maritima es a partir de 90 dias que la mercancía se encuentre en la bodega en origen',
     ...(aereo ? ['Flete aéreo sujeto a impuestos'] : []),
     'Valor es hasta la ciudad de Cali',
     'Se calcula la tasa del dolar del día que realice el pago',
