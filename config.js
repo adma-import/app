@@ -25,8 +25,13 @@ MODULOS: [
   { id: 'cotizaciones', nombre: 'Cotizaciones' },
   { id: 'ordenes-compra', nombre: 'Órdenes de compra' },
   { id: 'adma-company', nombre: 'Adma Company' },
-  { id: 'groupack', nombre: 'Groupack' }
+  { id: 'groupack', nombre: 'Groupack' },
+  { id: 'easypack', nombre: 'EasyPack' }
 ],
+
+  /* "Cliente proveniente de": lista base (Configuración > Datos permite agregar más). Estos tres tienen lógica propia y no se pueden borrar.
+     EasyPack tiene su propio módulo, por eso no aparece en el formulario del módulo Cotizaciones. */
+  ORIGENES_BASE: ['Adma Company', 'Groupack', 'EasyPack'],
 
   LOGO_MAX_BYTES: 700 * 1024, // Firestore limita cada documento a 1 MB y base64 pesa ~33% más
   LOGO_TIPOS_PERMITIDOS: ['image/png', 'image/svg+xml'],

@@ -6,6 +6,7 @@
 <title>Gestión de Importaciones ADMA</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="cotizaciones.css">
+<link rel="stylesheet" href="easypack.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap">
@@ -150,6 +151,18 @@
             </div>
           </div>
         </div>
+
+        <div class="panel" style="margin-top:var(--s4)">
+          <div class="cabecera"><h2 style="border:none;background:none;padding:0"><button type="button" class="acordeon-btn" aria-expanded="false" aria-controls="cuerpoOrigenes">Cliente proveniente de</button></h2></div>
+          <div class="cuerpo" id="cuerpoOrigenes" hidden>
+            <p class="tasa-meta" style="margin-bottom:var(--s4)">Opciones que aparecen en el formulario de Cotizaciones. Adma Company, Groupack y EasyPack vienen por defecto y no se pueden borrar (EasyPack tiene su propio módulo).</p>
+            <div class="tasa-form" style="margin-bottom:var(--s4)">
+              <input type="text" id="origenNuevo" maxlength="60" placeholder="Nuevo origen" aria-label="Nombre del nuevo origen" autocomplete="off">
+              <button class="btn btn-chico" type="button" id="btnAgregarOrigen">Agregar</button>
+            </div>
+            <div id="listaOrigenes" role="list"></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -192,5 +205,6 @@
 <script src="usuarios.js"></script>
 <script src="script.js"></script>
 <script src="cotizaciones.js"></script>
+<script src="easypack.js"></script>
 </body>
 </html>

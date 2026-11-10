@@ -1,0 +1,13 @@
+/* ===== Módulo EasyPack (reutiliza los estilos de Cotizaciones) ===== */
+.cot-e-anulada { background: #fee2e2; color: #991b1b; }
+.ep-anulada td { color: var(--text-muted, #64748b); }
+.ep-anulada td strong { text-decoration: line-through; }
+.ep-anulada .cot-acciones-fila, .ep-anulada .cot-estado { text-decoration: none; }
+.ep-col-no { white-space: nowrap; }
+.ep-trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ep-trio .login-campo { min-width: 0; }
+.ep-calc { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.ep-calc td { padding: 4px 0; border-bottom: 1px solid var(--border, #e2e8f0); }
+.ep-calc td:last-child { text-align: right; white-space: nowrap; padding-left: 12px; }
+.ep-resumen p { margin: 8px 0 0; font-size: .78rem; color: var(--text-muted, #475569); }
+@media (max-width: 480px) { .ep-trio { grid-template-columns: 1fr; } }

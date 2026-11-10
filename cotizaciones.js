@@ -1993,7 +1993,9 @@ function initEscuchaCotizaciones() {
   if (!document.getElementById('cotGrid')) return;
   detenerEscuchaCotizaciones();
   cotDesuscribir = cotRef().orderBy('creadoEn', 'desc').onSnapshot(snap => {
-    cotLista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const todas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    cotLista = todas.filter(c => c.origen !== 'EasyPack');             // las de EasyPack viven en su propio módulo (easypack.js)
+    if (typeof epRecibir === 'function') epRecibir(todas.filter(c => c.origen === 'EasyPack'));
     // Si una cotización se borra, sale de la selección
     [...cotSeleccion].forEach(id => { if (!cotLista.some(c => c.id === id)) cotSeleccion.delete(id); });
     cotPintar();
@@ -2008,8 +2010,22 @@ function initEscuchaCotizaciones() {
 function detenerEscuchaCotizaciones() {
   if (cotDesuscribir) { cotDesuscribir(); cotDesuscribir = null; }
   cotLista = [];
+  if (typeof epRecibir === 'function') epRecibir([]);
   cotSeleccion.clear();
   pgPintarTodos();
+}
+
+/* "Cliente proveniente de" (formulario y filtro) sale de Configuración > Datos. EasyPack tiene su propio módulo y no se ofrece aquí. */
+function cotLlenarOrigenes() {
+  const lista = (typeof DATOS !== 'undefined' && Array.isArray(DATOS.origenes) ? DATOS.origenes : APP_CONFIG.ORIGENES_BASE).filter(o => o !== 'EasyPack');
+  const opciones = lista.map(o => `<option value="${cotEsc(o)}">${cotEsc(o)}</option>`).join('');
+  [['cotOrigen', '<option value="">Selecciona…</option>'], ['cotFiltroOrigen', '<option value="">Todos</option>']].forEach(([id, primera]) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const actual = sel.value;
+    sel.innerHTML = primera + opciones;
+    if (lista.includes(actual)) sel.value = actual;
+  });
 }
 
 /* ---------- Orden de compra: réplica de la plantilla de Excel (ORDEN_DE_COMPRA_PLANTILLA.xlsx) ----------
@@ -2592,6 +2608,7 @@ async function cotGenerarOrdenPrueba(ids) {
 /* ---------- Inicialización (se registra después de script.js) ---------- */
 document.addEventListener('DOMContentLoaded', () => {
   if (!cotConstruirUI()) return;
+  document.addEventListener('datos-actualizados', cotLlenarOrigenes);
   document.getElementById('cotBtnNueva').addEventListener('click', cotAbrirNueva);
   document.getElementById('cotFormNueva').addEventListener('submit', cotGuardarNueva);
   document.getElementById('cotFormCostos').addEventListener('submit', cotGuardarCostos);

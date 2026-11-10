@@ -49,7 +49,7 @@ function aplicarPermisosPorRol(perfil) {
   mostrarModulo(primero ? primero.id : (permitidos.includes('config') ? 'config' : ''));
   cargarLogoGuardado();
   if (permitidos.includes('config')) initEscuchaUsuarios();
-  if (['cotizaciones', 'ordenes-compra', 'adma-company', 'groupack'].some(m => permitidos.includes(m))) initEscuchaCotizaciones();
+  if (['cotizaciones', 'ordenes-compra', 'adma-company', 'groupack', 'easypack'].some(m => permitidos.includes(m))) initEscuchaCotizaciones();
   initEscuchaTasas();
   initEscuchaDatos();
 }
@@ -236,7 +236,7 @@ function initTasasUI() {
    { fletes: [{ id, valor }], comisionAdma: 5 }
    Global: DATOS.fletes, DATOS.comisionAdma (y evento 'datos-actualizados' en document). */
 const COMISION_ADMA_DEFECTO = 5;
-let DATOS = { fletes: [], comisionAdma: COMISION_ADMA_DEFECTO };
+let DATOS = { fletes: [], comisionAdma: COMISION_ADMA_DEFECTO, origenes: [...APP_CONFIG.ORIGENES_BASE] };
 let desuscribirDatos = null;
 const refDatos = () => db.collection(APP_CONFIG.COLECCIONES.configuracion).doc('datos');
 
@@ -267,6 +267,28 @@ function pintarDatos(d) {
 
   document.getElementById('comisionValor').textContent =
     DATOS.comisionAdma.toLocaleString('es-CO', { maximumFractionDigits: 2 }) + ' %';
+
+  // "Cliente proveniente de": siempre incluye los orígenes base y suma los que se agregaron
+  const guardados = Array.isArray(d.origenes) ? d.origenes.filter(o => typeof o === 'string' && o.trim()) : [];
+  DATOS.origenes = [...new Set([...APP_CONFIG.ORIGENES_BASE, ...guardados])];
+  const listaOri = document.getElementById('listaOrigenes');
+  listaOri.replaceChildren();
+  DATOS.origenes.forEach(o => {
+    const fila = document.createElement('div');
+    fila.setAttribute('role', 'listitem');
+    fila.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:var(--s3);padding:var(--s2) 0;border-bottom:1px solid var(--border)';
+    const txt = document.createElement('span');
+    txt.textContent = o;
+    fila.appendChild(txt);
+    if (!APP_CONFIG.ORIGENES_BASE.includes(o)) {
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'btn secundario btn-chico'; del.textContent = 'Eliminar';
+      del.setAttribute('aria-label', `Eliminar ${o}`);
+      del.addEventListener('click', () => eliminarOrigen(o));
+      fila.appendChild(del);
+    }
+    listaOri.appendChild(fila);
+  });
   document.dispatchEvent(new CustomEvent('datos-actualizados', { detail: { ...DATOS } }));
 }
 
@@ -301,6 +323,21 @@ async function guardarComision() {
   catch (err) { console.error(err); alert('No se pudo guardar la comisión.'); }
 }
 
+async function agregarOrigen() {
+  const input = document.getElementById('origenNuevo');
+  const nombre = input.value.trim().replace(/\s+/g, ' ');
+  if (!nombre) { alert('Escribe el nombre del nuevo origen.'); return; }
+  if (DATOS.origenes.some(o => o.toLowerCase() === nombre.toLowerCase())) { alert('Ese origen ya existe.'); return; }
+  try { await refDatos().set({ origenes: [...DATOS.origenes, nombre] }, { merge: true }); input.value = ''; }
+  catch (err) { console.error(err); alert('No se pudo guardar el origen.'); }
+}
+
+async function eliminarOrigen(nombre) {
+  if (!confirm(`¿Eliminar "${nombre}" de la lista? Las cotizaciones que ya lo usan conservan su valor.`)) return;
+  try { await refDatos().set({ origenes: DATOS.origenes.filter(o => o !== nombre) }, { merge: true }); }
+  catch (err) { console.error(err); alert('No se pudo eliminar el origen.'); }
+}
+
 /* Acordeón de Configuración > Datos: todo colapsado; al abrir una fila se cierran las demás. */
 function initAcordeonDatos() {
   const btns = [...document.querySelectorAll('#panel-datos .acordeon-btn')];
@@ -319,6 +356,7 @@ function initDatosUI() {
   initAcordeonDatos();
   document.getElementById('btnAgregarFlete').addEventListener('click', agregarFlete);
   document.getElementById('btnGuardarComision').addEventListener('click', guardarComision);
+  document.getElementById('btnAgregarOrigen').addEventListener('click', agregarOrigen);
 }
 
 /* ---------- Inicialización ---------- */
