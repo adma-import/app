@@ -16,7 +16,28 @@ function crearModulosDinamicos() {
   });
 }
 
+/* ---------- Pantallas de detalle (con botón "Volver") ----------
+   Una pantalla ocupa el lugar del módulo que se está viendo; la pila recuerda a qué sección volver (por ejemplo:
+   Órdenes de compra > orden > cotización del ítem). Al cambiar de módulo desde el menú, la pila se vacía. */
+const panPila = [];
+const panSeccionVisible = () => { const s = [...document.querySelectorAll('.modulos > section')].find(x => !x.hidden); return s ? s.id : null; };
+function panMostrar(id) {
+  document.querySelectorAll('.modulos > section').forEach(s => { s.hidden = s.id !== id; });
+  window.scrollTo(0, 0);
+}
+function panAbrir(id) {
+  const actual = panSeccionVisible();
+  if (actual && actual !== id) panPila.push(actual);
+  panMostrar(id);
+}
+function panVolver() {
+  const previa = panPila.pop();
+  if (previa) panMostrar(previa);
+}
+function panCerrarTodas() { panPila.length = 0; }
+
 function mostrarModulo(id) {
+  panCerrarTodas();
   document.querySelectorAll('.modulos > section').forEach(s => { s.hidden = s.id !== id; });
   document.querySelectorAll(APP_CONFIG.SELECTORES.enlacesNav).forEach(a => {
     if (a.dataset.mod) a.toggleAttribute('aria-current', a.dataset.mod === id);
@@ -24,6 +45,7 @@ function mostrarModulo(id) {
   });
   cerrarMenu();
   window.scrollTo(0, 0);
+  document.dispatchEvent(new CustomEvent('modulo-mostrado', { detail: { id } }));
 }
 
 function initNavegacion() {
@@ -55,6 +77,7 @@ function aplicarPermisosPorRol(perfil) {
 }
 
 function alCerrarSesion() {
+  panCerrarTodas();
   if (typeof cotCerrarTodo === 'function') cotCerrarTodo();
   cerrarMenu();
   detenerEscuchaUsuarios();
@@ -101,6 +124,21 @@ function pintarLogo(src) {
   const lateral = document.getElementById('logoSidebar');
   lateral.src = src; lateral.hidden = false;
   document.querySelector('.sidebar .logo div').style.display = 'none';
+  // El mismo logo se usa como icono de la pestaña del navegador (se recuerda para mostrarlo desde la pantalla de login)
+  const fav = document.getElementById('favicon');
+  if (fav) fav.href = src;
+  try { localStorage.setItem('admaLogo', src); } catch (e) { /* almacenamiento no disponible */ }
+}
+
+/* Menú del usuario (barra lateral, abajo): al hacer clic muestra "Cerrar sesión" */
+function initMenuUsuario() {
+  const btn = document.getElementById('btnUsuarioMenu'), menu = document.getElementById('menuUsuario');
+  if (!btn || !menu) return;
+  const fijar = abierto => { menu.hidden = !abierto; btn.setAttribute('aria-expanded', String(abierto)); };
+  btn.addEventListener('click', e => { e.stopPropagation(); fijar(menu.hidden); });
+  document.addEventListener('click', e => { if (!menu.hidden && !menu.contains(e.target)) fijar(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') fijar(false); });
+  menu.addEventListener('click', () => fijar(false));
 }
 
 async function cargarLogoGuardado() {
@@ -364,6 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
   crearModulosDinamicos();
   initNavegacion();
   initMenuMovil();
+  initMenuUsuario();
   initPestanas();
   initTasasUI();
   initDatosUI();

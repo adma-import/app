@@ -4,8 +4,7 @@ let sesionActual = null; // Perfil del usuario logueado: { uid, usuario, nombre,
 /* ---------- Referencias al DOM (se llenan en initAuth) ---------- */
 let loginScreen, appShell, formLogin, loginUsuarioInput, loginPasswordInput,
     loginError, btnLogin, btnLoginTexto, btnCerrarSesion,
-    usuarioNombreEl, usuarioRolEl, usuarioAvatarEl,
-    usuarioNombreMovilEl, usuarioRolMovilEl, usuarioAvatarMovilEl;
+    usuarioNombreEl, usuarioRolEl, usuarioAvatarEl;
 
 function cachearElementosAuth() {
   loginScreen = document.getElementById('loginScreen');
@@ -20,9 +19,6 @@ function cachearElementosAuth() {
   usuarioNombreEl = document.getElementById('usuarioNombre');
   usuarioRolEl = document.getElementById('usuarioRol');
   usuarioAvatarEl = document.getElementById('usuarioAvatar');
-  usuarioNombreMovilEl = document.getElementById('usuarioNombreMovil');
-  usuarioRolMovilEl = document.getElementById('usuarioRolMovil');
-  usuarioAvatarMovilEl = document.getElementById('usuarioAvatarMovil');
 }
 
 /* ==============================================================
@@ -81,10 +77,6 @@ function pintarUsuarioEnUI(perfil) {
   usuarioNombreEl.textContent = perfil.nombre || perfil.usuario;
   usuarioRolEl.textContent = perfil.rol || '';
   usuarioAvatarEl.textContent = iniciales(perfil.nombre || perfil.usuario);
-
-  usuarioNombreMovilEl.textContent = perfil.nombre || perfil.usuario;
-  usuarioRolMovilEl.textContent = perfil.rol || '';
-  usuarioAvatarMovilEl.textContent = iniciales(perfil.nombre || perfil.usuario);
 }
 
 /* ==============================================================

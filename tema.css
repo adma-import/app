@@ -212,3 +212,60 @@ th { font-family: var(--fuente-titulo); font-weight: 800; }
 /* ---------- Estado "Abonado" en amarillo de la paleta ---------- */
 .cot-estado.pg-abonado { background: var(--amarillo); color: var(--tinta); border-color: var(--tinta); }
 .cot-pg-abonado { background: var(--amarillo-suave); border-color: var(--amarillo-linea); }
+
+/* ===== Barra lateral: nombre de la app (pequeño) y usuario abajo ===== */
+.sidebar { display: flex; flex-direction: column; }
+.sidebar .logo { display: flex !important; }
+.sidebar-app { margin: 0; padding: 8px 20px 12px; font-size: .68rem; letter-spacing: .03em; color: #a9a9a1; }
+.sidebar nav { flex: 1 1 auto; overflow-y: auto; }
+.sidebar-pie { position: relative; padding: 12px; margin-top: auto; border-top: 1px solid rgba(255, 255, 255, .1); }
+.sidebar-usuario-btn { display: flex; align-items: center; gap: 10px; width: 100%; background: transparent; border: 0; color: #fff; padding: 8px; border-radius: 10px; cursor: pointer; text-align: left; font: inherit; }
+.sidebar-usuario-btn:hover, .sidebar-usuario-btn[aria-expanded="true"] { background: rgba(255, 255, 255, .08); }
+.sidebar-usuario-btn .avatar { flex-shrink: 0; width: 36px; height: 36px; }
+.sidebar-usuario-btn .nombre { display: flex; flex-direction: column; min-width: 0; font-size: .85rem; line-height: 1.25; }
+.sidebar-usuario-btn .nombre > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.sidebar-usuario-btn .nombre small { color: #a9a9a1; font-size: .72rem; }
+.menu-usuario { position: absolute; left: 12px; right: 12px; bottom: calc(100% - 4px); z-index: 5; background: #1b1b1b; border: 1px solid rgba(255, 255, 255, .12); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .4); padding: 6px; }
+.menu-usuario a { display: block; padding: 10px 12px; border-radius: 8px; color: #f2958f; text-decoration: none; font-size: .9rem; font-weight: 600; }
+.menu-usuario a:hover { background: rgba(244, 90, 80, .14); color: #ffb4ae; }
+.hamburguesa { position: fixed; top: 10px; right: 10px; z-index: 34; box-shadow: 0 2px 8px rgba(0, 0, 0, .2); }
+@media (max-width: 900px) { main { padding-top: 64px; } }
+
+/* ===== Mensajes de error de formularios: debajo de los botones ===== */
+.modal-tarjeta > .modal-acciones { order: 98; }
+.modal-tarjeta > .login-error, .login-tarjeta > .login-error { order: 99; }
+
+/* ===== Botón fijo "Crear cotización" (reemplaza al botón flotante) ===== */
+.cot-fab { display: none !important; }
+.cot-cabecera { flex-basis: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cot-btn-crear { display: inline-flex; align-items: center; gap: 8px; }
+.cot-empresa { display: inline-block; font-size: .78rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--surface-alt, #f1f5f9); border: 1px solid var(--border, #cbd5e1); white-space: nowrap; }
+
+/* ===== Groupack / EasyPack: pestañas Cotizaciones | Compras Finalizadas ===== */
+.sub-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 2px solid var(--border, #e2e8f0); flex-wrap: wrap; }
+.sub-tab { background: transparent; border: 0; border-bottom: 3px solid transparent; margin-bottom: -2px; padding: 10px 16px; font: inherit; font-weight: 700; color: var(--text-muted, #475569); cursor: pointer; border-radius: 8px 8px 0 0; }
+.sub-tab:hover { background: var(--surface-alt, #f1f5f9); color: var(--tinta, #0d0d0d); }
+.sub-tab[aria-selected="true"] { color: var(--tinta, #0d0d0d); border-bottom-color: var(--amarillo, #f5c400); }
+
+/* ===== Pantallas de detalle (Cotización / Orden de compra) ===== */
+.pan { display: flex; flex-direction: column; gap: 16px; }
+.pan[hidden] { display: none; }
+.pan-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border, #e2e8f0); }
+.pan-volver { display: inline-flex; align-items: center; gap: 6px; }
+.pan-titulo { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; flex: 1 1 240px; min-width: 0; }
+.pan-titulo h2 { margin: 0; font-size: 1.25rem; overflow-wrap: anywhere; }
+.pan-acciones { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; flex: 1 1 100%; }
+@media (min-width: 900px) { .pan-acciones { flex: 0 1 auto; } }
+.pan-card { background: var(--surface, #fff); border: 1px solid var(--border, #e2e8f0); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.pan-sub { margin: 0; font-size: 1rem; }
+.pan-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 24px; margin: 0; }
+.pan-dato { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pan-dato dt { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted, #475569); }
+.pan-dato dd { margin: 0; overflow-wrap: anywhere; }
+.pan-imgs img { width: 110px; height: 110px; cursor: zoom-in; }
+.pan-tabla td:first-child { width: 65%; }
+.pan-tabla tr.pan-total td { font-weight: 800; background: var(--amarillo-suave, #fff8d6); }
+.pan-filtros { justify-content: flex-start; }
+.pan .cot-tabla-card { overflow-x: auto; }
+.cot-btn-tabla { text-decoration: none; }
+.pan-tabla { min-width: 0 !important; } .pan-tabla td { white-space: normal; overflow-wrap: anywhere; } .pan-tabla td.cot-num { white-space: nowrap; }

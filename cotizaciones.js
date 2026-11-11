@@ -39,12 +39,14 @@ const cotNum = (n, dec = 2) => Number(n).toLocaleString('es-CO', { minimumFracti
 function cotConstruirUI() {
   const sec = document.getElementById('cotizaciones');
   if (!sec) return false;
-  sec.innerHTML = `
-    <div class="cot-barra"><h2 class="cot-titulo">Cotizaciones</h2>
+  sec.innerHTML = `<div id="cotVista">
+    <div class="cot-barra">
+      <div class="cot-cabecera"><h2 class="cot-titulo" id="cotTitulo">Cotizaciones</h2>
+        <button type="button" class="btn cot-btn-crear" id="cotBtnNueva" title="Crear una cotización nueva"><svg class="cot-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS.crear}</svg><span>Crear cotización</span></button></div>
       <div class="cot-filtros">
         <input type="search" id="cotBuscar" placeholder="Buscar por cliente, producto, comercial, estado…" aria-label="Buscar cotizaciones" autocomplete="off">
-        <label class="cot-filtro"><span>Filtrar por estado</span><select id="cotFiltroEstado" aria-label="Filtrar por estado"><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="cotizada">Cotizada</option><option value="finalizada">Finalizada</option></select></label>
-        <label class="cot-filtro"><span>Filtrar por empresa</span><select id="cotFiltroOrigen" aria-label="Filtrar por origen"><option value="">Todos</option><option>Adma Company</option><option>Groupack</option></select></label>
+        <label class="cot-filtro"><span>Filtrar por estado</span><select id="cotFiltroEstado" aria-label="Filtrar por estado"><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="cotizada">Cotizada</option><option value="finalizada">Finalizada</option><option value="anulada">Anulada</option></select></label>
+        <label class="cot-filtro"><span>Filtrar por empresa</span><select id="cotFiltroOrigen" aria-label="Filtrar por empresa"><option value="">Todos</option><option>Adma Company</option><option>Groupack</option><option>EasyPack</option></select></label>
       </div>
       <p id="cotConteo" class="cot-conteo" aria-live="polite"></p>
       <div class="cot-acciones">
@@ -56,8 +58,14 @@ function cotConstruirUI() {
         <button type="button" class="btn btn-chico secundario" id="cotBtnOrdenPrueba" hidden title="Genera el PDF con datos ficticios, sin tocar consecutivos ni guardar nada"></button>
         <button type="button" class="cot-enlace" id="cotBtnLimpiarSel" hidden>Quitar selección</button>
       </div></div>
-    <div id="cotGrid" class="cot-tabla-wrap" aria-live="polite"><p class="lista-vacia">Cargando cotizaciones…</p></div>
-    <button type="button" id="cotBtnNueva" class="cot-fab" aria-label="Nueva cotización" title="Nueva cotización">+</button>`;
+    <div id="cotGrid" class="cot-tabla-wrap" aria-live="polite"><p class="lista-vacia">Cargando cotizaciones…</p></div></div>`;
+
+  // Pantallas completas (reemplazan a las ventanas modales de detalle): se muestran en lugar del módulo y tienen botón "Volver"
+  ['pan-cot', 'pan-oc'].forEach(pid => {
+    const s = document.createElement('section');
+    s.id = pid; s.hidden = true; s.className = 'pan';
+    document.querySelector('.modulos').appendChild(s);
+  });
 
   const modales = document.createElement('div');
   modales.innerHTML = `
@@ -116,15 +124,6 @@ function cotConstruirUI() {
     </form>
   </div>
 
-  <div id="cotModalDetalle" class="modal" hidden>
-    <div class="modal-fondo" data-cot-cerrar></div>
-    <div class="modal-tarjeta cot-modal cot-modal-detalle" role="dialog" aria-modal="true" aria-labelledby="cotDetalleTitulo">
-      <div class="modal-cabecera"><h2 id="cotDetalleTitulo">Cotización</h2><span id="cotDetalleAcc" class="cot-cab-acc"></span>
-        <button type="button" class="modal-cerrar" data-cot-cerrar aria-label="Cerrar">✕</button></div>
-      <div id="cotDetalleCuerpo" class="cot-detalle-tabla"></div>
-    </div>
-  </div>
-
   <div id="cotModalObs" class="modal" hidden>
     <div class="modal-fondo" data-cot-cerrar></div>
     <form id="cotFormObs" class="modal-tarjeta cot-modal" novalidate>
@@ -155,15 +154,6 @@ function cotConstruirUI() {
         <button type="submit" class="btn" id="ocBtnItems">Generar orden</button>
       </div>
     </form>
-  </div>
-
-  <div id="ocModalDetalle" class="modal" hidden>
-    <div class="modal-fondo" data-cot-cerrar></div>
-    <div class="modal-tarjeta cot-modal cot-modal-detalle" role="dialog" aria-modal="true" aria-labelledby="ocDetalleTitulo">
-      <div class="modal-cabecera"><h2 id="ocDetalleTitulo">Orden de compra</h2>
-        <button type="button" class="modal-cerrar" data-cot-cerrar aria-label="Cerrar">✕</button></div>
-      <div id="ocDetalleCuerpo" class="cot-detalle-tabla"></div>
-    </div>
   </div>
 
   <div id="pgModalDetalle" class="modal" hidden>
@@ -258,15 +248,13 @@ const cotAbrir = id => { document.getElementById(id).hidden = false; };
 function cotCerrarModal(m) {
   if (!m) return;
   m.hidden = true;
-  if (m.id === 'ocModalDetalle') ocDetalleBooth = null;
   if (m.id === 'cotModalObs') cotObsId = null;
   if (m.id === 'ocModalItems' && ocItemsResolver) { const f = ocItemsResolver; ocItemsResolver = null; f(null); }
-  if (m.id === 'cotModalDetalle') cotDetalleId = null;
   if (m.id === 'pgModalDetalle') pgDetalleId = null;
   if (m.id === 'cotModalNueva') cotNuevaEditId = null;
 }
 function cotCerrarTodo() {
-  document.querySelectorAll('#cotModalNueva, #cotModalCostos, #cotModalPago, #cotModalPagoGpk, #cotModalPagoProv, #cotModalDetalle, #pgModalDetalle, #ocModalDetalle, #cotModalObs, #ocModalItems, #cotLightbox').forEach(m => { m.hidden = true; });
+  document.querySelectorAll('#cotModalNueva, #cotModalCostos, #cotModalPago, #cotModalPagoGpk, #cotModalPagoProv, #pgModalDetalle, #cotModalObs, #ocModalItems, #cotLightbox').forEach(m => { m.hidden = true; });
   if (ocItemsResolver) { const f = ocItemsResolver; ocItemsResolver = null; f(null); }
   cotDetalleId = null; pgDetalleId = null; ocDetalleBooth = null; cotObsId = null; cotNuevaEditId = null;
 }
@@ -293,6 +281,7 @@ function cotLbMover(d) {
 function cotError(id, msg) {
   const el = document.getElementById(id);
   el.textContent = msg || ''; el.hidden = !msg;
+  if (msg && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 /* ---------- Imágenes: leer, comprimir, previsualizar ---------- */
@@ -344,6 +333,7 @@ function cotAbrirNueva() {
   cotNuevaEditId = null;
   document.getElementById('cotFormNueva').reset();
   document.getElementById('cotOrigen').disabled = false;
+  if (cotOrigenForzado) { document.getElementById('cotOrigen').value = cotOrigenForzado; document.getElementById('cotOrigen').disabled = true; }
   document.getElementById('cotNuevaTitulo').textContent = 'Nueva cotización';
   document.getElementById('cotBtnGuardar').textContent = 'Crear cotización';
   cotImagenesForm = []; cotPintarPrevias(); cotError('cotErrorNueva', '');
@@ -403,6 +393,20 @@ async function cotGuardarNueva(e) {
   if (!cant) return cotError('cotErrorNueva', 'Escribe la cantidad como un número (100) o como un rango (50-100), mayor que cero.');
   if (cant.min > cant.max) return cotError('cotErrorNueva', 'En el rango, el primer número debe ser menor que el segundo (por ejemplo 50-100).');
   const cantidad = cant.max;
+  if (origen === 'EasyPack' && !cotNuevaEditId) {
+    // Las cotizaciones de EasyPack tienen su propio formulario (nombre en español/inglés, empresa, NIT…): se abre con lo ya escrito
+    if (link && !cotLinkSeguro(link)) return cotError('cotErrorNueva', 'El link debe empezar por http:// o https://');
+    const imgs = cotImagenesForm.slice();
+    cotCerrarTodo();
+    cotIrAEasyPack();
+    if (typeof epAbrirNueva === 'function') {
+      epAbrirNueva();
+      const v = (id, val) => { document.getElementById(id).value = val; };
+      v('epCliente', cliente); v('epDescripcion', descripcion); v('epCantidad', cant.min < cant.max ? `${cant.min}-${cant.max}` : String(cant.max)); v('epLink', link);
+      if (typeof epImagenes !== 'undefined') { epImagenes = imgs; epPintarPrevias(); }
+    }
+    return;
+  }
   if (link && !cotLinkSeguro(link)) return cotError('cotErrorNueva', 'El link debe empezar por http:// o https://');
   if (cotImagenesForm.join('').length > COT_MAX_CHARS_TOTAL) return cotError('cotErrorNueva', 'Las imágenes pesan demasiado. Quita alguna.');
 
@@ -452,7 +456,7 @@ function cotAbrirCostos(id) {
   document.getElementById('cotValorUnidad').value = k.valorUnidad ?? '';
   document.getElementById('cotAumentoTipo').value = k.aumentoTipo === 'porcentaje' ? 'porcentaje' : 'unidad';
   document.getElementById('cotAumento').value = k.aumentoRmb ?? '';
-  document.getElementById('cotEnvioPct').value = k.envioPct ?? '';
+  document.getElementById('cotEnvioPct').value = k.envioPct ?? 1.5;   // 1,5 % por el envío del dinero a China (se puede cambiar)
   cotImagenesReales = (c.imagenesReales || []).slice(); cotPintarPreviasReales();
   document.getElementById('cotUnidadesCaja').value = k.unidadesPorCaja ?? '';
   document.getElementById('cotCbm').value = k.cbmCaja ?? '';
@@ -549,9 +553,14 @@ async function cotEliminar(id) {
 const COT_ESTADOS = {
   pendiente:  'Pendiente',
   cotizada:   'Cotizada',
-  finalizada: 'Finalizada'
+  finalizada: 'Finalizada',
+  anulada:    'Anulada'
 };
-const cotEstadoDe = c => c.estado === 'costeada' ? 'cotizada' : (COT_ESTADOS[c.estado] ? c.estado : 'pendiente');
+const cotEsEP = c => !!c && c.origen === 'EasyPack';
+/* Las cotizaciones de EasyPack guardan sus costos en `costosEp` y pueden estar anuladas */
+const cotEstadoDe = c => cotEsEP(c)
+  ? (c.anulada ? 'anulada' : c.estado === 'finalizada' ? 'finalizada' : (c.costosEp ? 'cotizada' : 'pendiente'))
+  : (c.estado === 'costeada' ? 'cotizada' : (COT_ESTADOS[c.estado] ? c.estado : 'pendiente'));
 
 /* Cálculos del resumen. Usa la comisión y las tasas guardadas con la cotización; lo que no se pueda calcular (datos faltantes) se omite. */
 const cotOk = v => typeof v === 'number' && !Number.isNaN(v);
@@ -597,13 +606,21 @@ function cotCalculos(c) {
     }
     if (r.logistica360 != null && u > 0) r.logisticaUnit = r.logistica360 / u;
   }
+  // Conversiones a dólares con la tasa de cambio (Configuración > Tasas de cambio) guardada con la cotización
+  if (r.cajas != null) r.cantPorCaja = k.unidadesPorCaja;
+  if (r.logisticaUnit != null) r.logisticaUnitUsd = cotAUsd(r.logisticaUnit, k);
+  if (r.logistica360 != null) r.logistica360UsdCalc = r.viaAerea && cotOk(r.logistica360Usd) ? r.logistica360Usd : cotAUsd(r.logistica360, k);
+  if (r.totalRmb != null) r.totalFinalRmb = r.totalConEnvio != null ? r.totalConEnvio : r.totalRmb;   // RMB + aumento, + comisión, + % del envío a China
   if (r.totalRmb != null && cotOk(k.usdRmb) && k.usdRmb > 0 && cotOk(k.usdCop)) {
     r.totalCop = ((r.totalConEnvio != null ? r.totalConEnvio : r.totalRmb) / k.usdRmb) * k.usdCop;   // incluye el % de envío a China si lo hay
     r.precioUnitCop = r.totalCop / u;
+    r.totalCopUsd = cotAUsd(r.totalCop, k);
     if (r.logisticaUnit != null) r.totalUnitCop = r.precioUnitCop + r.logisticaUnit;
     if (r.logistica360 != null) {
       r.totalConFlete = r.totalCop + r.logistica360;
       r.unitConFlete = r.totalConFlete / u;
+      r.totalConFleteUsd = cotAUsd(r.totalConFlete, k);
+      r.unitConFleteUsd = cotAUsd(r.unitConFlete, k);
     }
   }
   return r;
@@ -619,7 +636,7 @@ function cotLineasCostos(c) {
   // Cada definición: [etiqueta, valor, decimales, sufijo, prefijo]. ¥ = RMB, $ = pesos (COP) o dólares (USD).
   const grupo = (titulo, defs) => ({
     titulo,
-    lineas: defs.filter(([, v]) => v != null).map(([txt, v, dec, suf = '', pre = '']) => [txt, pre + cotNum(v, dec) + suf])
+    lineas: defs.filter(([, v]) => v != null).map(([txt, v, dec, suf = '', pre = '', destacar = false]) => [txt, pre + cotNum(v, dec) + suf, destacar])
   });
   const pct = r.comisionPct != null ? cotNum(r.comisionPct, 2) + '% ' : '';
   const Y = '¥ ', P = '$ ';
@@ -629,23 +646,28 @@ function cotLineasCostos(c) {
       ['Precio real por unidad', r.precioUnidad, 2, '', Y],
       ['Total real sin comisión', r.totalSinComision, 2, '', Y],
       ['Aumento del RMB', r.aumentoValor, 2, r.aumentoSuf, r.aumentoPorc ? '' : Y],
+      ['Comisión de Adma' + (pct ? ` (${pct.trim()})` : ''), r.comisionTotal, 2, '', Y],
       ['Total para el cliente con el aumento y la comisión de Adma', r.totalRmb, 2, '', Y],
       ['Total para el cliente con el aumento y el porcentaje del envío' + (r.envioPct != null ? ` (${cotNum(r.envioPct, 2)}%)` : ''), r.totalConEnvio, 2, '', Y],
-      ['Comisión de Adma' + (pct ? ` (${pct.trim()})` : ''), r.comisionTotal, 2, '', Y]
-      
+      ['Total (RMB + aumento + comisión + envío a China)', r.totalFinalRmb, 2, '', Y, true]
     ]),
     grupo(r.viaAerea ? 'FLETE AÉREO SUJETO A IMPUESTOS' : 'FLETE MARÍTIMO', [
       ['CBM', r.cbmTotal, 4, ' m³'],
       ['Cantidad de cajas', r.cajas, 0],
+      ['Cantidad por caja', r.cantPorCaja, 0, ' unidades'],
       ['Peso por caja', r.pesoCaja, 2, ' kg'],
       ['Logística unitaria en COP', r.viaAerea ? null : r.logisticaUnit, 2, ' COP', P],
+      ['Logística unitaria en USD', r.viaAerea ? null : r.logisticaUnitUsd, 2, ' USD', P],
       ['Logística 360 COP', r.viaAerea ? null : r.logistica360, 2, ' COP', P],
-      ['Logística 360 USD', r.viaAerea ? r.logistica360Usd : null, 2, ' USD', P]
+      ['Logística 360 USD', r.logistica360UsdCalc, 2, ' USD', P]
     ]),
     grupo('RESUMEN', [
       ['Valor total del producto sin flete', r.totalCop, 2, ' COP', P],
+      ['Valor total del producto sin flete en USD', r.totalCopUsd, 2, ' USD', P],
       ['Valor total del producto con flete', r.totalConFlete, 2, ' COP', P],
-      ['Valor por unidad del producto con flete', r.unitConFlete, 2, ' COP', P]
+      ['Valor total del producto con flete en USD', r.totalConFleteUsd, 2, ' USD', P],
+      ['Valor por unidad del producto con flete', r.unitConFlete, 2, ' COP', P],
+      ['Valor por unidad del producto con flete en USD', r.unitConFleteUsd, 2, ' USD', P]
     ])
   ].filter(g => g.lineas.length);
 }
@@ -653,17 +675,19 @@ function cotLineasCostos(c) {
 /* ---------- Buscador ---------- */
 const cotNorm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 /* Búsqueda sin tildes ni mayúsculas; cada palabra escrita debe aparecer en algún dato de la cotización. */
+/* Empresa que fija el módulo: Groupack y EasyPack ven solo lo suyo; Cotizaciones ('') es el módulo padre y ve todas. */
+let cotOrigenForzado = '';
 function cotFiltradas() {
   const q = cotNorm(document.getElementById('cotBuscar').value).split(/\s+/).filter(Boolean);
   const est = document.getElementById('cotFiltroEstado').value;
-  const ori = document.getElementById('cotFiltroOrigen').value;
+  const ori = cotOrigenForzado || document.getElementById('cotFiltroOrigen').value;
   return cotLista.filter(c => {
     const e = cotEstadoDe(c);
     if (est && e !== est) return false;
     if (ori && c.origen !== ori) return false;
     if (!q.length) return true;
     const k = c.costos || {};
-    const pajar = cotNorm([c.cliente, c.descripcion, c.origen, c.comercial, COT_ESTADOS[e], k.broker, c.link, c.creadoPor, c.cantidad, c.cantidadMin].join(' '));
+    const pajar = cotNorm([c.cliente, c.descripcion, c.nombreProducto, c.empresa, c.origen, c.comercial, COT_ESTADOS[e], k.broker, c.link, c.creadoPor, c.cantidad, c.cantidadMin].join(' '));
     return q.every(t => pajar.includes(t));
   });
 }
@@ -674,7 +698,12 @@ const COT_ICONOS = {
   pdf:    '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
   enviar: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   editar: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
-  borrar: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>'
+  borrar: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>',
+  crear:  '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14h6"/>',
+  ver:    '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  volver: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  link:   '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  pago:   '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/>'
 };
 /* Paginación de la tabla (10 / 50 / 100 por página) */
 const COT_OPCIONES_PAGINA = [10, 50, 100];
@@ -700,13 +729,14 @@ function cotPintar() {
   cotActualizarAcciones();
   const grid = document.getElementById('cotGrid');
   const conteo = document.getElementById('cotConteo');
-  if (!cotLista.length) {
+  const base = cotOrigenForzado ? cotLista.filter(c => c.origen === cotOrigenForzado) : cotLista;
+  if (!base.length) {
     conteo.textContent = '';
-    grid.innerHTML = '<p class="lista-vacia">Aún no hay cotizaciones. Toca el botón + para crear la primera.</p>';
+    grid.innerHTML = `<p class="lista-vacia">Aún no hay cotizaciones${cotOrigenForzado ? ' de ' + cotEsc(cotOrigenForzado) : ''}. Usa el botón "Crear cotización" para hacer la primera.</p>`;
     return;
   }
   const lista = cotFiltradas();
-  conteo.textContent = lista.length === cotLista.length ? `${cotLista.length} cotizaciones` : `${lista.length} de ${cotLista.length} cotizaciones`;
+  conteo.textContent = lista.length === base.length ? `${base.length} cotizaciones` : `${lista.length} de ${base.length} cotizaciones`;
   if (!lista.length) {
     grid.innerHTML = '<p class="lista-vacia">Ninguna cotización coincide con la búsqueda.</p>';
     return;
@@ -715,63 +745,111 @@ function cotPintar() {
   const pag = cotPaginar(lista);
   const filas = pag.filas.map(c => {
     const est = cotEstadoDe(c);
-    const puedeModulo = est === 'cotizada' || (est === 'finalizada' && !c.modulo);
-    const etiquetaEditar = est === 'pendiente' ? 'Continuar: llenar los costos' : 'Editar costos';
-
-    const acciones = [
-      `<button type="button" class="cot-btn-tabla" data-cot-excel="${c.id}" title="A cotizar - Generar Excel">${ico('excel')}<span>A cotizar</span></button>`,
-      c.costos ? `<button type="button" class="cot-btn-tabla" data-cot-pdf="${c.id}" data-tipo="cotizacion" title="${c.origen === 'Groupack' ? 'Cotización - Generar Excel (formato Groupack)' : 'Cotización - Generar PDF'}">${ico(c.origen === 'Groupack' ? 'excel' : 'pdf')}<span>${c.origen === 'Groupack' ? 'Cotización Excel' : 'Cotización PDF'}</span></button>` : '<span aria-hidden="true"></span>',
-      puedeModulo ? `<button type="button" class="cot-btn-tabla cot-btn-modulo" data-cot-modulo="${c.id}" title="Mandar a módulo">${ico('enviar')}<span>Mandar a módulo</span></button>` : '<span aria-hidden="true"></span>',
-      est !== 'finalizada' ? `<button type="button" class="cot-btn-tabla cot-btn-ico" data-cot-continuar="${c.id}" title="${etiquetaEditar}" aria-label="${etiquetaEditar} de ${cotEsc(c.cliente)}">${ico('editar')}</button>` : '<span aria-hidden="true"></span>',
-      `<button type="button" class="cot-btn-tabla cot-btn-ico cot-btn-peligro" data-cot-eliminar="${c.id}" title="Eliminar" aria-label="Eliminar cotización de ${cotEsc(c.cliente)}">${ico('borrar')}</button>`
-    ].join('');
-
-    const fila = `<tr class="cot-fila" data-cot-toggle="${c.id}" tabindex="0" aria-haspopup="dialog" title="Ver detalle">
-      <td class="cot-col-sel"><input type="checkbox" class="cot-sel" data-cot-sel="${c.id}"${cotSeleccion.has(c.id) ? ' checked' : ''} aria-label="Seleccionar la cotización de ${cotEsc(c.cliente)}"></td>
+    const esEP = cotEsEP(c);
+    const producto = esEP ? (c.nombreProducto || c.descripcion) : c.descripcion;
+    const sel = esEP ? '' : `<input type="checkbox" class="cot-sel" data-cot-sel="${c.id}"${cotSeleccion.has(c.id) ? ' checked' : ''} aria-label="Seleccionar la cotización de ${cotEsc(c.cliente)}">`;
+    return `<tr class="cot-fila${est === 'anulada' ? ' ep-anulada' : ''}" data-cot-toggle="${c.id}" tabindex="0" title="Ver detalle">
+      <td class="cot-col-sel">${sel}</td>
       <td class="cot-col-cliente"><strong>${cotEsc(c.cliente)}</strong></td>
-      <td class="cot-col-prod"><span class="cot-prod-txt">${cotEsc(c.descripcion)}</span></td>
+      <td class="cot-col-empresa"><span class="cot-empresa">${cotEsc(c.origen || '—')}</span></td>
+      <td class="cot-col-prod"><span class="cot-prod-txt">${cotEsc(producto)}</span></td>
       <td class="cot-col-estado"><span class="cot-estado cot-e-${est}">${COT_ESTADOS[est]}</span>${cotStockTag(cotStockTipo(c))}${cotTieneOrden(c) ? `<span class="cot-oc" title="Orden de compra generada">OC ${cotEsc(c.orden.booth)}</span>` : ''}</td>
-      <td class="cot-col-acc"><div class="cot-acciones-fila">${acciones}</div></td>
+      <td class="cot-col-acc"><div class="cot-acciones-fila"><button type="button" class="cot-btn-tabla" data-cot-ver="${c.id}" title="Ver el detalle de la cotización" aria-label="Ver la cotización de ${cotEsc(c.cliente)}">${ico('ver')}<span>Ver</span></button></div></td>
     </tr>`;
-
-    return fila;
   }).join('');
 
   grid.innerHTML = `<div class="cot-tabla-card"><table class="cot-tabla">
-    <thead><tr><th class="cot-col-sel"><span class="sr-only">Seleccionar</span></th><th>Cliente</th><th>Producto</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
+    <thead><tr><th class="cot-col-sel"><span class="sr-only">Seleccionar</span></th><th>Cliente</th><th>Empresa</th><th>Producto</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
     <tbody>${filas}</tbody></table></div>${cotControlesPagina(lista.length, pag)}`;
 }
 
-function cotAlternar(id) {
-  cotDetalleId = id;
-  cotPintarDetalle();
-  if (cotDetalleId) cotAbrir('cotModalDetalle');
+/* Lleva al módulo EasyPack (sus cotizaciones tienen su propio formulario de costos y PDF) */
+function cotIrAEasyPack() {
+  const enlace = document.querySelector('.sidebar nav a[data-mod="easypack"]');
+  if (!enlace || enlace.style.display === 'none') { alert('No tienes acceso al módulo EasyPack.'); return; }
+  mostrarModulo('easypack');
+  if (typeof cotSubMostrar === 'function') cotSubMostrar('easypack', 'cot');
 }
 
-/* Ventana con toda la información de una cotización */
+/* ---------- Pantalla de detalle (reemplaza a la ventana modal) ----------
+   modo 'cot': desde Cotizaciones, con todos los botones según el estado. modo 'oc': desde una orden de compra, solo 3 botones. */
+let cotDetalleModo = 'cot';
+function cotAlternar(id, modo = 'cot') {
+  const c = cotLista.find(x => x.id === id);
+  if (!c) return;
+  if (cotEsEP(c)) { cotIrAEasyPack(); return; }
+  cotDetalleId = id; cotDetalleModo = modo;
+  cotPintarDetalle();
+  if (cotDetalleId) panAbrir('pan-cot');
+}
+
+const cotSvg = n => `<svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS[n]}</svg>`;
+const cotTituloTabla = t => { const m = String(t).toLowerCase(); return m.charAt(0).toUpperCase() + m.slice(1); };
+const cotBotonPan = (ico, txt, attr, cls = '') => `<button type="button" class="cot-btn-tabla ${cls}" ${attr} title="${cotEsc(txt)}">${cotSvg(ico)}<span>${cotEsc(txt)}</span></button>`;
+
 function cotPintarDetalle() {
+  const sec = document.getElementById('pan-cot');
   const c = cotLista.find(x => x.id === cotDetalleId);
-  const modal = document.getElementById('cotModalDetalle');
-  if (!c) { cotDetalleId = null; if (modal) modal.hidden = true; return; }
-  const est = cotEstadoDe(c);
-  const link = cotLinkSeguro(c.link);
-  const costos = c.costos ? cotLineasCostos(c).map(g => `<p class="cot-costos"><strong>${cotEsc(g.titulo)}</strong><br>${g.lineas.map(([a, b]) => `<strong>${cotEsc(a)}:</strong> ${cotEsc(b)}`).join('<br>')}</p>`).join('') : '';
-  document.getElementById('cotDetalleTitulo').textContent = c.cliente;
-  document.getElementById('cotDetalleAcc').innerHTML = cotEditable(c) ? `<button type="button" class="cot-btn-tabla" data-cot-editar="${c.id}" title="Editar datos de la cotización"><svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS.editar}</svg><span>Editar datos</span></button>` : '';
-  document.getElementById('cotDetalleCuerpo').innerHTML = `
-    <p><span class="cot-estado cot-e-${est}">${COT_ESTADOS[est]}</span></p>
-    <p>${cotEsc(c.descripcion)}</p>
-    ${c.origen ? `<p class="cot-dato"><strong>Cliente de:</strong> ${cotEsc(c.origen)}${c.comercial ? ` · <strong>Comercial:</strong> ${cotEsc(c.comercial)}` : ''}</p>` : ''}
-    <p class="cot-dato"><strong>Cantidad:</strong> ${cotCantidadTxt(c)}${(c.costos && c.costos.broker) ? ` · <strong>Broker:</strong> ${cotEsc(c.costos.broker)}` : ''}</p>
-    ${cotEsStock(c) ? `<p class="cot-dato"><strong>Tipo:</strong> ${cotStockTipo(c)} (sin aumento ni comisión)</p>` : ''}
-    ${c.modulo ? `<p class="cot-dato"><strong>Enviada a:</strong> ${cotEsc(cotNombreModulo(c.modulo))}</p>` : ''}
-    ${est === 'finalizada' || c.observaciones ? cotObsHtml(c, 'data-cot-obs') : ''}
-    ${link ? `<p class="cot-dato"><a href="${cotEsc(link)}" target="_blank" rel="noopener noreferrer">Ver link del producto</a></p>` : ''}
-    ${(c.imagenes || []).length ? `<p class="cot-dato"><strong>Imágenes de referencia</strong></p><div class="cot-miniaturas">${c.imagenes.map((s, i) => `<img src="${cotEsc(s)}" alt="Referencia ${i + 1} de ${cotEsc(c.cliente)}">`).join('')}</div>` : ''}
-    ${(c.imagenesReales || []).length ? `<p class="cot-dato"><strong>Imágenes reales cotizadas</strong></p><div class="cot-miniaturas">${c.imagenesReales.map((s, i) => `<img src="${cotEsc(s)}" alt="Real ${i + 1} de ${cotEsc(c.cliente)}">`).join('')}</div>` : ''}
-    ${costos}
-    ${cotTieneOrden(c) ? `<p class="cot-dato"><strong>Orden de compra:</strong> ${cotEsc(c.orden.booth)} · Item No ${cotEsc(c.orden.itemNo)} · Shipping Mark ${cotEsc(c.orden.marca)}</p>` : ''}
-    ${est === 'finalizada' ? `<footer><button type="button" class="cot-btn-tabla" data-cot-orden="${c.id}"><svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS.pdf}</svg><span>${cotTieneOrden(c) ? 'Descargar orden de compra · ' + c.orden.booth : 'Generar orden de compra'}</span></button>${c.costos && pgEsSuper() ? `<button type="button" class="cot-btn-tabla" data-cot-orden-prueba="${c.id}" title="PDF con datos ficticios: no cambia consecutivos ni guarda nada"><span>Orden de PRUEBA</span></button>` : ''}</footer>` : ''}`;
+  if (!c) { cotDetalleId = null; if (sec && !sec.hidden && typeof panVolver === 'function') panVolver(); return; }
+  const est = cotEstadoDe(c), k = c.costos, link = cotLinkSeguro(c.link);
+
+  let acciones;
+  if (cotDetalleModo === 'oc') {
+    acciones = [
+      k && pgEsSuper() ? cotBotonPan('pdf', 'Orden de prueba', `data-cot-orden-prueba="${c.id}"`) : '',
+      cotTieneOrden(c) ? cotBotonPan('pdf', 'Descargar orden de compra · ' + c.orden.booth, `data-cot-orden="${c.id}"`) : '',
+      link ? `<a class="cot-btn-tabla" href="${cotEsc(link)}" target="_blank" rel="noopener noreferrer">${cotSvg('link')}<span>Ver link del producto</span></a>` : ''
+    ].join('');
+  } else {
+    const puedeModulo = est === 'cotizada' || (est === 'finalizada' && !c.modulo);
+    const grupal = c.origen === 'Groupack';
+    acciones = [
+      cotBotonPan('excel', 'A cotizar', `data-cot-excel="${c.id}"`),
+      k ? cotBotonPan(grupal ? 'excel' : 'pdf', grupal ? 'Cotización Excel' : 'Cotización PDF', `data-cot-pdf="${c.id}" data-tipo="cotizacion"`) : '',
+      puedeModulo ? cotBotonPan('enviar', 'Mandar a módulo', `data-cot-modulo="${c.id}"`, 'cot-btn-modulo') : '',
+      est === 'finalizada' ? cotBotonPan('pdf', cotTieneOrden(c) ? 'Descargar orden de compra · ' + c.orden.booth : 'Generar orden de compra', `data-cot-orden="${c.id}"`) : '',
+      est === 'finalizada' && k && pgEsSuper() ? cotBotonPan('pdf', 'Orden de prueba', `data-cot-orden-prueba="${c.id}"`) : '',
+      est !== 'finalizada' ? cotBotonPan('editar', k ? 'Editar costos' : 'Llenar costos', `data-cot-continuar="${c.id}"`) : '',
+      cotEditable(c) ? cotBotonPan('editar', 'Editar datos', `data-cot-editar="${c.id}"`) : '',
+      cotBotonPan('borrar', 'Eliminar', `data-cot-eliminar="${c.id}"`, 'cot-btn-peligro')
+    ].join('');
+  }
+
+  const dato = (t, v) => v ? `<div class="pan-dato"><dt>${t}</dt><dd>${v}</dd></div>` : '';
+  const obsEditable = !cotTieneOrden(c) && cotDetalleModo === 'cot';
+  const datos = [
+    dato('Producto', cotEsc(c.descripcion)),
+    dato('Cliente', cotEsc(c.cliente)),
+    dato('Cliente de', cotEsc(c.origen || '')),
+    dato('Comercial', cotEsc(c.comercial || '')),
+    dato('Cantidad', cotCantidadTxt(c)),
+    dato('Bróker', k && k.broker ? cotEsc(k.broker) : ''),
+    dato('Tipo', cotEsStock(c) ? `${cotStockTipo(c)} (sin aumento ni comisión)` : ''),
+    dato('Enviada a', c.modulo ? cotEsc(cotNombreModulo(c.modulo)) : ''),
+    (est === 'finalizada' || c.observaciones) ? dato('Observaciones', (c.observaciones ? cotEsc(c.observaciones) : '<em>Sin observaciones</em>') + (obsEditable ? ` <button type="button" class="cot-enlace" data-cot-obs="${c.id}">Editar</button>` : '')) : '',
+    cotTieneOrden(c) ? dato('Orden de compra', `${cotEsc(c.orden.booth)} · Item No ${cotEsc(c.orden.itemNo)} · Shipping Mark ${cotEsc(c.orden.marca)}`) : '',
+    link && cotDetalleModo === 'cot' ? dato('Link', `<a href="${cotEsc(link)}" target="_blank" rel="noopener noreferrer">Ver link del producto</a>`) : ''
+  ].join('');
+
+  const imgs = (titulo, lista, alt) => lista && lista.length
+    ? `<div class="pan-card"><h3 class="pan-sub">${titulo}</h3><div class="cot-miniaturas pan-imgs">${lista.map((s, i) => `<img src="${cotEsc(s)}" alt="${alt} ${i + 1} de ${cotEsc(c.cliente)}">`).join('')}</div></div>` : '';
+
+  // El detalle del precio del producto (comisión, aumento, totales) solo lo ve el Super usuario
+  const tablas = k ? cotLineasCostos(c).filter(g => g.titulo !== 'PRECIO PRODUCTO' || pgEsSuper()).map(g => `
+    <div class="pan-card"><h3 class="pan-sub">${cotEsc(cotTituloTabla(g.titulo))}</h3>
+      <div class="cot-tabla-card"><table class="cot-tabla pan-tabla"><thead><tr><th>Concepto</th><th class="cot-num">Valor</th></tr></thead>
+        <tbody>${g.lineas.map(([a, b, d]) => `<tr${d ? ' class="pan-total"' : ''}><td>${cotEsc(a)}</td><td class="cot-num">${cotEsc(b)}</td></tr>`).join('')}</tbody></table></div></div>`).join('') : '';
+
+  sec.innerHTML = `
+    <div class="pan-barra">
+      <button type="button" class="btn secundario btn-chico pan-volver" data-pan-volver>${cotSvg('volver')}<span>Volver</span></button>
+      <div class="pan-titulo"><h2>${cotEsc(c.cliente)}</h2><span class="cot-estado cot-e-${est}">${COT_ESTADOS[est]}</span>${cotStockTag(cotStockTipo(c))}</div>
+      <div class="pan-acciones">${acciones}</div>
+    </div>
+    <div class="pan-card"><dl class="pan-datos">${datos}</dl></div>
+    ${imgs('Imágenes de referencia', c.imagenes, 'Referencia')}
+    ${imgs('Imágenes reales cotizadas', c.imagenesReales, 'Real')}
+    ${tablas}`;
 }
 
 /* ---------- Ayudas de formularios ---------- */
@@ -1563,7 +1641,9 @@ async function cotGenerarExcelGrupalUna(c) {
    Al mandar una cotización a su módulo se guarda: modulo ('adma-company' | 'groupack'), estado 'finalizada' y pagos: [].
    Cada pago: { id, concepto: 'producto'|'flete'|'todo', monto, montoProducto, montoFlete, fecha, nota, comprobante, por, registradoEn }
    El estado de pago (sin pagar / abonado / pagado) se calcula siempre a partir de los pagos y de los totales de la cotización. */
-const COT_MODULO_DE_ORIGEN = { 'Adma Company': 'adma-company', 'Groupack': 'groupack' };
+const COT_MODULO_DE_ORIGEN = { 'Adma Company': 'adma-company', 'Groupack': 'groupack', 'EasyPack': 'easypack' };
+/* Groupack y EasyPack tienen dos secciones (Cotizaciones | Compras Finalizadas): las compras finalizadas viven en `${módulo}-fin` */
+const pgContenedor = mod => document.getElementById(mod === 'groupack' || mod === 'easypack' ? mod + '-fin' : mod);
 const cotNombreModulo = id => (APP_CONFIG.MODULOS.find(m => m.id === id) || {}).nombre || id;
 const PG_ESTADOS = { sinpagar: 'Sin pagar', abonado: 'Abonado', pagado: 'Pagado' };
 const PG_CONCEPTOS = { producto: 'Producto', flete: 'Flete', todo: 'Producto + flete' };
@@ -1646,7 +1726,9 @@ async function cotGuardarObs(e) {
 
 /* Totales en COP y estado de pago de una cotización */
 function pgResumen(c) {
-  const r = cotCalculos(c);
+  const r = cotEsEP(c) && c.costosEp
+    ? { viaAerea: c.costosEp.modalidad === 'aerea', unidades: c.cantidad, totalCop: (Number(c.costosEp.precioUnidad) || 0) * (Number(c.cantidad) || 0), logistica360: 0 }
+    : cotCalculos(c);
   if (!r) return null;
   const producto = cotOk(r.totalCop) ? r.totalCop : 0;
   const fleteTotal = cotOk(r.logistica360) ? r.logistica360 : 0;
@@ -1679,10 +1761,10 @@ function pgRepartir(concepto, monto, R) {
 
 /* ---------- Módulos: estructura y tarjetas ---------- */
 function pgConstruirModulo(mod) {
-  const sec = document.getElementById(mod);
+  const sec = pgContenedor(mod);
   if (!sec) return;
   sec.innerHTML = `
-    <div class="cot-barra"><h2 class="cot-titulo">${cotEsc(cotNombreModulo(mod))}</h2>
+    <div class="cot-barra"><h2 class="cot-titulo">${cotEsc(cotNombreModulo(mod))}${mod === 'groupack' || mod === 'easypack' ? ' · Compras Finalizadas' : ''}</h2>
       <div class="cot-filtros">
         <input type="search" data-pg-buscar placeholder="Buscar por cliente, flete o estado de pago…" aria-label="Buscar en ${cotEsc(cotNombreModulo(mod))}" autocomplete="off">
         <label class="cot-filtro"><span>Filtrar por pago</span><select data-pg-estado aria-label="Filtrar por estado de pago"><option value="">Todos</option><option value="sinpagar">Sin pagar</option><option value="abonado">Abonado</option><option value="pagado">Pagado</option></select></label>
@@ -1793,7 +1875,7 @@ function pgCeldaCliente(c, R) {
 function pgFila(c) {
   const R = pgResumen(c);
   if (!R) return '';
-  const foto = (c.imagenesReales || [])[0];
+  const foto = (c.imagenesReales || [])[0] || (cotEsEP(c) ? (c.imagenes || [])[0] : '');
   return `<tr class="cot-fila" data-pg-toggle="${c.id}" tabindex="0" aria-haspopup="dialog" title="Ver detalle">
     <td class="cot-col-cliente"><div class="pg-cliente">${foto ? `<img class="pg-thumb" src="${cotEsc(foto)}" alt="">` : '<span class="pg-thumb" aria-hidden="true"></span>'}<strong>${cotEsc(c.cliente)}</strong>${cotStockTag(cotStockTipo(c))}</div></td>
     <td><span class="cot-via cot-via-${R.viaAerea ? 'aereo' : 'maritimo'}">${R.viaAerea ? 'Aéreo' : 'Marítimo'}</span></td>
@@ -1807,14 +1889,16 @@ function pgFila(c) {
 }
 
 function pgPintar(mod) {
-  const sec = document.getElementById(mod);
+  const sec = pgContenedor(mod);
   const grid = sec && sec.querySelector('[data-pg-grid]');
   if (!grid) return;
   const conteo = sec.querySelector('[data-pg-conteo]');
-  const todas = cotLista.filter(c => c.modulo === mod && cotEstadoDe(c) === 'finalizada' && c.costos);
+  const todas = cotLista.filter(c => c.modulo === mod && cotEstadoDe(c) === 'finalizada' && (c.costos || c.costosEp));
   if (!todas.length) {
     conteo.textContent = '';
-    grid.innerHTML = `<p class="lista-vacia">Aún no hay cotizaciones en este módulo. Se agregan desde Cotizaciones con el botón "Mandar a módulo".</p>`;
+    grid.innerHTML = mod === 'easypack'
+      ? `<p class="lista-vacia">Aún no hay compras finalizadas de EasyPack. Se agregan desde la pestaña Cotizaciones de EasyPack, con el botón "Compra finalizada".</p>`
+      : `<p class="lista-vacia">Aún no hay compras finalizadas en este módulo. Se agregan desde Cotizaciones con el botón "Mandar a módulo".</p>`;
     return;
   }
   const q = cotNorm(sec.querySelector('[data-pg-buscar]').value).split(/\s+/).filter(Boolean);
@@ -1994,7 +2078,7 @@ function initEscuchaCotizaciones() {
   detenerEscuchaCotizaciones();
   cotDesuscribir = cotRef().orderBy('creadoEn', 'desc').onSnapshot(snap => {
     const todas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    cotLista = todas.filter(c => c.origen !== 'EasyPack');             // las de EasyPack viven en su propio módulo (easypack.js)
+    cotLista = todas;                                                  // Cotizaciones es el módulo padre: incluye todas las empresas (EasyPack además tiene su módulo propio en easypack.js)
     if (typeof epRecibir === 'function') epRecibir(todas.filter(c => c.origen === 'EasyPack'));
     // Si una cotización se borra, sale de la selección
     [...cotSeleccion].forEach(id => { if (!cotLista.some(c => c.id === id)) cotSeleccion.delete(id); });
@@ -2015,9 +2099,9 @@ function detenerEscuchaCotizaciones() {
   pgPintarTodos();
 }
 
-/* "Cliente proveniente de" (formulario y filtro) sale de Configuración > Datos. EasyPack tiene su propio módulo y no se ofrece aquí. */
+/* "Cliente proveniente de" (formulario y filtro) sale de Configuración > Datos. Al elegir EasyPack se abre el formulario propio de EasyPack. */
 function cotLlenarOrigenes() {
-  const lista = (typeof DATOS !== 'undefined' && Array.isArray(DATOS.origenes) ? DATOS.origenes : APP_CONFIG.ORIGENES_BASE).filter(o => o !== 'EasyPack');
+  const lista = (typeof DATOS !== 'undefined' && Array.isArray(DATOS.origenes) ? DATOS.origenes : APP_CONFIG.ORIGENES_BASE);
   const opciones = lista.map(o => `<option value="${cotEsc(o)}">${cotEsc(o)}</option>`).join('');
   [['cotOrigen', '<option value="">Selecciona…</option>'], ['cotFiltroOrigen', '<option value="">Todos</option>']].forEach(([id, primera]) => {
     const sel = document.getElementById(id);
@@ -2026,6 +2110,7 @@ function cotLlenarOrigenes() {
     sel.innerHTML = primera + opciones;
     if (lista.includes(actual)) sel.value = actual;
   });
+  if (typeof cotAplicarOrigenForzado === 'function') cotAplicarOrigenForzado();
 }
 
 /* ---------- Orden de compra: réplica de la plantilla de Excel (ORDEN_DE_COMPRA_PLANTILLA.xlsx) ----------
@@ -2216,7 +2301,7 @@ function cotSeleccionar(id, marcar) {
 }
 function cotSeleccionarVisibles() {
   cotSeleccion.clear();
-  cotPaginar(cotFiltradas()).filas.forEach(c => cotSeleccion.add(c.id));
+  cotPaginar(cotFiltradas()).filas.filter(c => !cotEsEP(c)).forEach(c => cotSeleccion.add(c.id));
   cotPintar();
 }
 
@@ -2364,6 +2449,21 @@ function ocGrupos() {
   }).sort((a, b) => b.booth - a.booth);
 }
 
+/* Paginación compartida (misma apariencia que Cotizaciones). aPag / aTam = nombres de los atributos data-* de los controles */
+const OC_OPCIONES_PAGINA = [10, 50, 100];
+function ocPagHtml(total, ini, mostradas, paginas, porPagina, pagina, aPag, aTam) {
+  return `<div class="cot-paginacion">
+    <label class="cot-pag-tam"><span>Filas por página</span><select ${aTam} aria-label="Filas por página">${OC_OPCIONES_PAGINA.map(n => `<option value="${n}"${n === porPagina ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+    <span class="cot-pag-info">${total ? ini + 1 : 0}–${ini + mostradas} de ${total}</span>
+    <div class="cot-pag-nav">
+      <button type="button" class="btn btn-chico secundario" ${aPag}="prev"${pagina <= 1 ? ' disabled' : ''}>Anterior</button>
+      <span class="cot-pag-num">Página ${pagina} de ${paginas}</span>
+      <button type="button" class="btn btn-chico secundario" ${aPag}="next"${pagina >= paginas ? ' disabled' : ''}>Siguiente</button>
+    </div></div>`;
+}
+let ocPagina = 1, ocPorPagina = 10;
+let ocDetPagina = 1, ocDetPorPagina = 10, ocDetBuscar = '', ocDetCliente = '';
+
 function ocConstruirModulo() {
   const sec = document.getElementById(OC_MODULO);
   if (!sec) return;
@@ -2371,11 +2471,19 @@ function ocConstruirModulo() {
     <div class="cot-barra"><h2 class="cot-titulo">Órdenes de compra</h2>
       <div class="cot-filtros">
         <input type="search" data-oc-buscar placeholder="Buscar por consecutivo, cliente, Item No o producto…" aria-label="Buscar órdenes de compra" autocomplete="off">
+        <label class="cot-filtro"><span>Filtrar por estado de pago</span><select data-oc-estado aria-label="Filtrar por estado de pago"><option value="">Todos</option><option value="sinpagar">Sin pagar</option><option value="pagado">Pagado</option></select></label>
       </div>
       <p class="cot-conteo" data-oc-conteo aria-live="polite"></p></div>
     <div class="cot-tabla-wrap" data-oc-grid aria-live="polite"><p class="lista-vacia">Cargando…</p></div>`;
-  sec.addEventListener('input', e => { if (e.target.closest('[data-oc-buscar]')) ocPintar(); });
+  sec.addEventListener('input', e => { if (e.target.closest('[data-oc-buscar]')) { ocPagina = 1; ocPintar(); } });
+  sec.addEventListener('change', e => {
+    if (e.target.closest('[data-oc-estado]')) { ocPagina = 1; ocPintar(); return; }
+    const t = e.target.closest('[data-oc-por-pagina]');
+    if (t) { ocPorPagina = Number(t.value) || 10; ocPagina = 1; ocPintar(); }
+  });
   sec.addEventListener('click', e => {
+    const pg = e.target.closest('[data-oc-pag]');
+    if (pg) { if (!pg.disabled) { ocPagina += pg.dataset.ocPag === 'next' ? 1 : -1; ocPintar(); } return; }
     const pdf = e.target.closest('[data-oc-pdf]');
     const anu = e.target.closest('[data-oc-anular]');
     const pago = e.target.closest('[data-oc-pago]');
@@ -2389,7 +2497,23 @@ function ocConstruirModulo() {
   sec.addEventListener('keydown', e => {
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('tr[data-oc-toggle]')) { e.preventDefault(); ocAbrirDetalle(e.target.dataset.ocToggle); }
   });
-  document.getElementById('ocDetalleCuerpo').addEventListener('click', e => {
+
+  // Pantalla de una orden: botones arriba, tabla de ítems con filtros y paginación
+  const pan = document.getElementById('pan-oc');
+  pan.addEventListener('input', e => {
+    const b = e.target.closest('[data-ocd-buscar]');
+    if (b) { ocDetBuscar = b.value; ocDetPagina = 1; ocPintarTablaDetalle(); }
+  });
+  pan.addEventListener('change', e => {
+    const c = e.target.closest('[data-ocd-cliente]');
+    if (c) { ocDetCliente = c.value; ocDetPagina = 1; ocPintarTablaDetalle(); return; }
+    const t = e.target.closest('[data-ocd-por-pagina]');
+    if (t) { ocDetPorPagina = Number(t.value) || 10; ocDetPagina = 1; ocPintarTablaDetalle(); }
+  });
+  pan.addEventListener('click', e => {
+    const pg = e.target.closest('[data-ocd-pag]');
+    if (pg) { if (!pg.disabled) { ocDetPagina += pg.dataset.ocdPag === 'next' ? 1 : -1; ocPintarTablaDetalle(); } return; }
+    if (e.target.closest('[data-pan-volver]')) { panVolver(); return; }
     const pdf = e.target.closest('[data-oc-pdf]');
     const ver = e.target.closest('[data-oc-ver]');
     const anu = e.target.closest('[data-oc-anular]');
@@ -2401,14 +2525,10 @@ function ocConstruirModulo() {
     else if (pquitar) ocQuitarPagoProv(Number(pquitar.dataset.ocPquitar));
     else if (anu) ocAnular(Number(anu.dataset.ocAnular));
     else if (pdf) cotGenerarOrden([pdf.dataset.ocPdf]);
-    else if (ver) { cotCerrarModal(document.getElementById('ocModalDetalle')); cotAlternar(ver.dataset.ocVer); }
+    else if (ver) cotAlternar(ver.dataset.ocVer, 'oc');      // "Ver cotización": pantalla aparte, con "Volver" a esta orden
   });
 }
 
-function ocCeldaPago(g) {
-  const est = ocEstadoPago(g);
-  return `<td><div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px"><span class="cot-estado pg-${est}">${OC_ESTADOS[est]}</span>${est === 'pagado' ? '' : `<button type="button" class="cot-btn-tabla cot-btn-modulo" data-oc-pago="${cotEsc(g.booth)}" title="Registrar pago al proveedor">Registrar pago</button>`}</div></td>`;
-}
 function ocPintar() {
   const sec = document.getElementById(OC_MODULO);
   const grid = sec && sec.querySelector('[data-oc-grid]');
@@ -2421,16 +2541,26 @@ function ocPintar() {
     return;
   }
   const q = cotNorm(sec.querySelector('[data-oc-buscar]').value).split(/\s+/).filter(Boolean);
+  const est = sec.querySelector('[data-oc-estado]').value;
   const lista = todos.filter(g => {
+    if (est && ocEstadoPago(g) !== est) return false;
     const pajar = cotNorm([g.booth, g.por, g.fecha, ...g.items.flatMap(c => [c.cliente, c.descripcion, c.orden.itemNo, c.orden.marca, c.costos && c.costos.broker])].join(' '));
     return q.every(t => pajar.includes(t));
   });
   conteo.textContent = lista.length === todos.length ? `${todos.length} órdenes` : `${lista.length} de ${todos.length} órdenes`;
-  const pdfIco = `<svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS.pdf}</svg>`;
-  const filas = lista.map(g => {
+  if (!lista.length) { grid.innerHTML = '<p class="lista-vacia">Ninguna orden coincide con la búsqueda.</p>'; return; }
+
+  const paginas = Math.max(1, Math.ceil(lista.length / ocPorPagina));
+  ocPagina = Math.min(Math.max(1, ocPagina), paginas);
+  const ini = (ocPagina - 1) * ocPorPagina;
+  const pagina = lista.slice(ini, ini + ocPorPagina);
+
+  const ico = n => `<svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS[n]}</svg>`;
+  const filas = pagina.map(g => {
     const clientes = [...new Set(g.items.map(c => c.cliente))].join(', ');
     const brokers = [...new Set(g.items.map(c => ((c.costos && c.costos.broker) || '').trim()).filter(Boolean))].join(', ');
-    return `<tr class="cot-fila" data-oc-toggle="${cotEsc(g.booth)}" tabindex="0" aria-haspopup="dialog" title="Ver detalle">
+    const pe = ocEstadoPago(g);
+    return `<tr class="cot-fila" data-oc-toggle="${cotEsc(g.booth)}" tabindex="0" title="Ver detalle">
       <td><strong>${cotEsc(g.booth)}</strong></td>
       <td>${cotEsc(g.fecha)}</td>
       <td class="cot-col-prod"><span class="cot-prod-txt" title="${cotEsc(clientes)}">${cotEsc(clientes)}</span>${[...new Set(g.items.map(cotStockTipo).filter(Boolean))].map(cotStockTag).join('')}</td>
@@ -2438,45 +2568,95 @@ function ocPintar() {
       <td class="cot-num">¥ ${cotNum(g.total, 2)}</td>
       <td>${brokers ? cotEsc(brokers) : '—'}</td>
       <td>${cotEsc(g.por)}</td>
-      ${ocCeldaPago(g)}
-      <td class="cot-col-acc"><div class="cot-acciones-oc"><button type="button" class="cot-btn-tabla" data-oc-pdf="${g.items[0].id}" title="Descargar la orden de compra en PDF">${pdfIco}<span>Descargar PDF</span></button>${pgEsSuper() ? `<button type="button" class="cot-btn-tabla cot-btn-ico cot-btn-peligro" data-oc-anular="${cotEsc(g.booth)}" title="Eliminar orden de compra" aria-label="Eliminar la orden de compra ${cotEsc(g.booth)}"><svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS.borrar}</svg></button>` : ''}</div></td>
+      <td><span class="cot-estado pg-${pe}">${OC_ESTADOS[pe]}</span></td>
+      <td class="cot-col-acc"><div class="cot-acciones-oc">
+        ${pe === 'pagado' ? '' : `<button type="button" class="cot-btn-tabla cot-btn-modulo" data-oc-pago="${cotEsc(g.booth)}" title="Registrar pago al proveedor">${ico('pago')}<span>Registrar pago</span></button>`}
+        <button type="button" class="cot-btn-tabla" data-oc-pdf="${g.items[0].id}" title="Descargar la orden de compra en PDF">${ico('pdf')}<span>Descargar PDF</span></button>
+        ${pgEsSuper() ? `<button type="button" class="cot-btn-tabla cot-btn-ico cot-btn-peligro" data-oc-anular="${cotEsc(g.booth)}" title="Eliminar orden de compra" aria-label="Eliminar la orden de compra ${cotEsc(g.booth)}">${ico('borrar')}</button>` : ''}</div></td>
     </tr>`;
   }).join('');
-  grid.innerHTML = lista.length ? `<div class="cot-tabla-card"><table class="cot-tabla cot-tabla-oc">
-    <thead><tr><th>Consecutivo</th><th>Fecha</th><th>Clientes</th><th class="cot-num">Cotizaciones</th><th class="cot-num">Total (RMB)</th><th>Broker</th><th>Creada por</th><th>Pago a proveedor</th><th class="cot-col-acc">Acciones</th></tr></thead>
-    <tbody>${filas}</tbody></table></div>` : '<p class="lista-vacia">Ninguna orden coincide con la búsqueda.</p>';
+  grid.innerHTML = `<div class="cot-tabla-card"><table class="cot-tabla cot-tabla-oc">
+    <thead><tr><th>Consecutivo</th><th>Fecha</th><th>Clientes</th><th class="cot-num">Cotizaciones</th><th class="cot-num">Total (RMB)</th><th>Broker</th><th>Creada por</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
+    <tbody>${filas}</tbody></table></div>${ocPagHtml(lista.length, ini, pagina.length, paginas, ocPorPagina, ocPagina, 'data-oc-pag', 'data-oc-por-pagina')}`;
 }
 
 function ocAbrirDetalle(booth) {
   ocDetalleBooth = Number(booth);
+  ocDetPagina = 1; ocDetBuscar = ''; ocDetCliente = '';
   ocPintarDetalle();
-  if (ocDetalleBooth != null) cotAbrir('ocModalDetalle');
+  if (ocDetalleBooth != null) panAbrir('pan-oc');
 }
 
+/* Pantalla de una orden de compra */
 function ocPintarDetalle() {
-  const modal = document.getElementById('ocModalDetalle');
+  const sec = document.getElementById('pan-oc');
   const g = ocGrupos().find(x => x.booth === ocDetalleBooth);
-  if (!g) { ocDetalleBooth = null; if (modal) modal.hidden = true; return; }
-  const items = g.items.map(c => {
+  if (!g) { ocDetalleBooth = null; if (sec && !sec.hidden && typeof panVolver === 'function') panVolver(); return; }
+  const ico = n => `<svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS[n]}</svg>`;
+  const clientes = [...new Set(g.items.map(c => c.cliente))].sort((a, b) => a.localeCompare(b, 'es'));
+  if (ocDetCliente && !clientes.includes(ocDetCliente)) ocDetCliente = '';
+  const tipos = [...new Set(g.items.map(cotStockTipo).filter(Boolean))].map(t => ' · ' + t).join('');
+  sec.innerHTML = `
+    <div class="pan-barra">
+      <button type="button" class="btn secundario btn-chico pan-volver" data-pan-volver>${ico('volver')}<span>Volver</span></button>
+      <div class="pan-titulo"><h2>Orden de compra · ${cotEsc(g.booth)}${cotEsc(tipos)}</h2><span class="cot-estado pg-${ocEstadoPago(g)}">${OC_ESTADOS[ocEstadoPago(g)]}</span></div>
+      <div class="pan-acciones">
+        <button type="button" class="cot-btn-tabla" data-oc-pdf="${g.items[0].id}">${ico('pdf')}<span>Descargar PDF</span></button>
+        ${ocPagoDe(g) ? '' : `<button type="button" class="cot-btn-tabla cot-btn-modulo" data-oc-pago="${cotEsc(g.booth)}">${ico('pago')}<span>Registrar pago a proveedor</span></button>`}
+        ${pgEsSuper() ? `<button type="button" class="cot-btn-tabla cot-btn-peligro" data-oc-anular="${cotEsc(g.booth)}">${ico('borrar')}<span>Anular orden</span></button>` : ''}
+      </div>
+    </div>
+    <div class="pan-card"><dl class="pan-datos">
+      <div class="pan-dato"><dt>Fecha</dt><dd>${cotEsc(g.fecha || '—')}</dd></div>
+      ${g.por ? `<div class="pan-dato"><dt>Creada por</dt><dd>${cotEsc(g.por)}</dd></div>` : ''}
+      <div class="pan-dato"><dt>Cotizaciones</dt><dd>${g.items.length}</dd></div>
+      <div class="pan-dato"><dt>Total</dt><dd>¥ ${cotNum(g.total, 2)}</dd></div>
+    </dl>${ocBloquePago(g)}</div>
+    <div class="pan-card">
+      <h3 class="pan-sub">Ítems de la orden</h3>
+      <div class="cot-filtros pan-filtros">
+        <input type="search" data-ocd-buscar value="${cotEsc(ocDetBuscar)}" placeholder="Buscar por Item No, cliente o producto…" aria-label="Buscar en los ítems de la orden" autocomplete="off">
+        <label class="cot-filtro"><span>Filtrar por cliente</span><select data-ocd-cliente aria-label="Filtrar por cliente"><option value="">Todos</option>${clientes.map(c => `<option value="${cotEsc(c)}"${c === ocDetCliente ? ' selected' : ''}>${cotEsc(c)}</option>`).join('')}</select></label>
+      </div>
+      <div data-ocd-tabla></div>
+    </div>`;
+  ocPintarTablaDetalle();
+}
+
+function ocPintarTablaDetalle() {
+  const cont = document.querySelector('#pan-oc [data-ocd-tabla]');
+  const g = ocGrupos().find(x => x.booth === ocDetalleBooth);
+  if (!cont || !g) return;
+  const q = cotNorm(ocDetBuscar).split(/\s+/).filter(Boolean);
+  const lista = g.items.filter(c => {
+    if (ocDetCliente && c.cliente !== ocDetCliente) return false;
+    return q.every(t => cotNorm([c.orden.itemNo, c.orden.marca, c.cliente, c.descripcion, c.observaciones].join(' ')).includes(t));
+  });
+  if (!lista.length) { cont.innerHTML = '<p class="lista-vacia">Ningún ítem coincide con la búsqueda.</p>'; return; }
+  const paginas = Math.max(1, Math.ceil(lista.length / ocDetPorPagina));
+  ocDetPagina = Math.min(Math.max(1, ocDetPagina), paginas);
+  const ini = (ocDetPagina - 1) * ocDetPorPagina;
+  const pagina = lista.slice(ini, ini + ocDetPorPagina);
+  const filas = pagina.map(c => {
     const k = c.costos || {}, r = cotCalculos(c) || {};
     const ctn = r.cajas ?? k.cajas ?? 0, upc = k.unidadesPorCaja || 0;
-    return `<div class="oc-item">
-      <p><strong>${cotEsc(c.orden.itemNo)}</strong> · ${cotEsc(c.orden.marca)}</p>
-      <p class="cot-dato"><strong>Cliente:</strong> ${cotEsc(c.cliente)}</p>
-      <p>${cotEsc(c.descripcion)}</p>
-      <p class="cot-dato"><strong>Cajas:</strong> ${cotNum(ctn, 0)} · <strong>Unidades por caja:</strong> ${cotNum(upc, 0)} · <strong>Cantidad:</strong> ${cotNum(ctn * upc, 0)}</p>
-      <p class="cot-dato"><strong>Precio por unidad:</strong> ¥ ${cotNum(k.valorUnidad || 0, 2)} · <strong>Monto:</strong> ¥ ${cotNum(ocMonto(c), 2)}</p>
-      ${c.observaciones ? `<p class="cot-dato cot-obs"><strong>Notes:</strong> ${cotEsc(c.observaciones)}</p>` : ''}
-      <button type="button" class="cot-enlace" data-oc-ver="${c.id}" style="align-self:flex-start">Ver cotización</button>
-    </div>`;
+    const foto = (c.imagenesReales || [])[0] || (c.imagenes || [])[0];
+    return `<tr>
+      <td><strong>${cotEsc(c.orden.itemNo)}</strong><br><small>${cotEsc(c.orden.marca)}</small></td>
+      <td>${cotEsc(c.cliente)}</td>
+      <td class="cot-col-prod"><div class="pg-cliente">${foto ? `<img class="pg-thumb" src="${cotEsc(foto)}" alt="">` : ''}<span class="cot-prod-txt">${cotEsc(c.descripcion)}</span></div></td>
+      <td class="cot-num">${cotNum(ctn, 0)}</td>
+      <td class="cot-num">${cotNum(upc, 0)}</td>
+      <td class="cot-num">${cotNum(ctn * upc, 0)}</td>
+      <td class="cot-num">¥ ${cotNum(k.valorUnidad || 0, 2)}</td>
+      <td class="cot-num">¥ ${cotNum(ocMonto(c), 2)}</td>
+      <td>${c.observaciones ? `<span class="cot-prod-txt">${cotEsc(c.observaciones)}</span>` : '—'}</td>
+      <td class="cot-col-acc"><button type="button" class="cot-btn-tabla" data-oc-ver="${c.id}" title="Ver la cotización de este ítem">Ver cotización</button></td>
+    </tr>`;
   }).join('');
-  document.getElementById('ocDetalleTitulo').textContent = `Orden de compra · ${g.booth}${[...new Set(g.items.map(cotStockTipo).filter(Boolean))].map(t => ' · ' + t).join('')}`;
-  document.getElementById('ocDetalleCuerpo').innerHTML = `
-    <p class="cot-dato"><strong>Fecha:</strong> ${cotEsc(g.fecha || '—')}${g.por ? ` · <strong>Creada por:</strong> ${cotEsc(g.por)}` : ''}</p>
-    <p class="cot-dato"><strong>Cotizaciones:</strong> ${g.items.length} · <strong>Total:</strong> ¥ ${cotNum(g.total, 2)}</p>
-    ${ocBloquePago(g)}
-    ${items}
-    <footer><button type="button" class="btn btn-chico" data-oc-pdf="${g.items[0].id}">Descargar PDF</button>${ocPagoDe(g) ? '' : `<button type="button" class="btn secundario btn-chico" data-oc-pago="${cotEsc(g.booth)}">Registrar pago a proveedor</button>`}${pgEsSuper() ? `<button type="button" class="btn peligro btn-chico" data-oc-anular="${cotEsc(g.booth)}">Anular orden</button>` : ''}</footer>`;
+  cont.innerHTML = `<div class="cot-tabla-card"><table class="cot-tabla">
+    <thead><tr><th>Item No</th><th>Cliente</th><th>Producto</th><th class="cot-num">Cajas</th><th class="cot-num">Unid. por caja</th><th class="cot-num">Cantidad</th><th class="cot-num">Precio unidad</th><th class="cot-num">Monto</th><th>Notes</th><th class="cot-col-acc">Acciones</th></tr></thead>
+    <tbody>${filas}</tbody></table></div>${ocPagHtml(lista.length, ini, pagina.length, paginas, ocDetPorPagina, ocDetPagina, 'data-ocd-pag', 'data-ocd-por-pagina')}`;
 }
 
 function ocBloquePago(g) {
@@ -2582,7 +2762,8 @@ async function ocAnular(booth) {
     alert(err.message === 'CAMBIO' ? 'La orden cambió mientras la anulabas. Actualiza e inténtalo de nuevo.' : 'No se pudo anular la orden. Revisa tu conexión y las reglas de Firestore.');
     return;
   }
-  cotCerrarModal(document.getElementById('ocModalDetalle'));
+  ocDetalleBooth = null;
+  if (typeof panVolver === 'function') panVolver();
   alert(resultado.boothDevuelto ? `Orden ${booth} anulada. El consecutivo volvió a ${booth}.` : `Orden ${booth} anulada. Había órdenes posteriores, así que el consecutivo ${booth} queda sin usar.`);
 }
 
@@ -2605,9 +2786,63 @@ async function cotGenerarOrdenPrueba(ids) {
   catch (err) { console.error('Error en la orden de prueba:', err); alert('No se pudo generar la orden de prueba.'); return false; }
 }
 
+/* ---------- Groupack y EasyPack: Cotizaciones | Compras Finalizadas ----------
+   "Cotizaciones" es el módulo padre y muestra todas las empresas. En Groupack, la pestaña Cotizaciones es esa misma vista (se mueve de sitio)
+   filtrada por Groupack; en EasyPack, la pestaña Cotizaciones es el módulo propio de EasyPack (easypack.js). */
+const COT_SUBMODULOS = { groupack: 'Groupack', easypack: 'EasyPack' };
+const cotSubActiva = { groupack: 'cot', easypack: 'cot' };
+
+function cotArmarSubmodulos() {
+  Object.entries(COT_SUBMODULOS).forEach(([mod, nombre]) => {
+    const sec = document.getElementById(mod);
+    if (!sec) return;
+    sec.innerHTML = `
+      <div class="sub-tabs" role="tablist" aria-label="Secciones de ${cotEsc(nombre)}">
+        <button type="button" class="sub-tab" role="tab" data-sub="cot" aria-selected="true">Cotizaciones</button>
+        <button type="button" class="sub-tab" role="tab" data-sub="fin" aria-selected="false">Compras Finalizadas</button>
+      </div>
+      <div id="${mod}-cot" data-sub-panel="cot"></div>
+      <div id="${mod}-fin" data-sub-panel="fin" hidden></div>`;
+    sec.querySelectorAll('.sub-tab').forEach(b => b.addEventListener('click', () => cotSubMostrar(mod, b.dataset.sub)));
+  });
+}
+
+function cotSubMostrar(mod, sub) {
+  const sec = document.getElementById(mod);
+  if (!sec) return;
+  cotSubActiva[mod] = sub;
+  sec.querySelectorAll('.sub-tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.sub === sub)));
+  sec.querySelectorAll('[data-sub-panel]').forEach(p => { p.hidden = p.dataset.subPanel !== sub; });
+  cotUbicarVista();
+}
+
+function cotAplicarOrigenForzado() {
+  const f = document.getElementById('cotFiltroOrigen');
+  const wrap = f && f.closest('.cot-filtro');
+  if (wrap) wrap.hidden = !!cotOrigenForzado;
+}
+
+/* Coloca la vista de Cotizaciones donde corresponde según el módulo que se está mostrando */
+function cotUbicarVista() {
+  const vista = document.getElementById('cotVista');
+  if (!vista) return;
+  const visible = [...document.querySelectorAll('.modulos > section')].find(x => !x.hidden);
+  const mod = visible ? visible.id : '';
+  const enGroupack = mod === 'groupack' && cotSubActiva.groupack === 'cot';
+  const host = document.getElementById(enGroupack ? 'groupack-cot' : 'cotizaciones');
+  const forzado = enGroupack ? 'Groupack' : '';
+  if (host && vista.parentNode !== host) host.appendChild(vista);
+  if (forzado !== cotOrigenForzado) { cotOrigenForzado = forzado; document.getElementById('cotFiltroOrigen').value = ''; }
+  document.getElementById('cotTitulo').textContent = forzado ? `${forzado} · Cotizaciones` : 'Cotizaciones';
+  cotAplicarOrigenForzado();
+  cotPagina = 1; cotPintar();
+}
+
 /* ---------- Inicialización (se registra después de script.js) ---------- */
 document.addEventListener('DOMContentLoaded', () => {
   if (!cotConstruirUI()) return;
+  cotArmarSubmodulos();
+  document.addEventListener('modulo-mostrado', cotUbicarVista);
   document.addEventListener('datos-actualizados', cotLlenarOrigenes);
   document.getElementById('cotBtnNueva').addEventListener('click', cotAbrirNueva);
   document.getElementById('cotFormNueva').addEventListener('submit', cotGuardarNueva);
@@ -2682,36 +2917,26 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('cotBtnExcelSel').addEventListener('click', () => cotGenerarExcel([...cotSeleccion]));
 
   document.getElementById('cotGrid').addEventListener('click', e => {
-    const xls = e.target.closest('[data-cot-excel]');
-    const pdf = e.target.closest('[data-cot-pdf]');
-    const ord = e.target.closest('[data-cot-orden]');
-    const mdl = e.target.closest('[data-cot-modulo]');
-    const cont = e.target.closest('[data-cot-continuar]');
-    const del = e.target.closest('[data-cot-eliminar]');
-    if (xls) cotGenerarExcel([xls.dataset.cotExcel]);
-    else if (pdf) cotGenerarPDF(pdf.dataset.cotPdf, pdf.dataset.tipo);
-    else if (ord) cotGenerarOrden(ord.dataset.cotOrden);
-    else if (mdl) cotMandarAModulo(mdl.dataset.cotModulo);
-    else if (cont) cotAbrirCostos(cont.dataset.cotContinuar);
-    else if (del) cotEliminar(del.dataset.cotEliminar);
-    else if (!e.target.closest('input, a, button')) {
-      const fila = e.target.closest('tr[data-cot-toggle]');
-      if (fila) cotAlternar(fila.dataset.cotToggle);
-    }
+    const ver = e.target.closest('[data-cot-ver]');
+    if (ver) { cotAlternar(ver.dataset.cotVer); return; }
+    if (e.target.closest('input, a, button')) return;
+    const fila = e.target.closest('tr[data-cot-toggle]');
+    if (fila) cotAlternar(fila.dataset.cotToggle);
   });
-  document.getElementById('cotDetalleAcc').addEventListener('click', e => {
-    const edi = e.target.closest('[data-cot-editar]');
-    if (edi) { cotCerrarModal(document.getElementById('cotModalDetalle')); cotAbrirEditar(edi.dataset.cotEditar); }
-  });
-  document.getElementById('cotDetalleCuerpo').addEventListener('click', e => {
-    const ord = e.target.closest('[data-cot-orden]');
-    const pru = e.target.closest('[data-cot-orden-prueba]');
-    const obs = e.target.closest('[data-cot-obs]');
-    const edi = e.target.closest('[data-cot-editar]');
-    if (edi) { cotCerrarModal(document.getElementById('cotModalDetalle')); cotAbrirEditar(edi.dataset.cotEditar); }
-    else if (obs) { cotCerrarModal(document.getElementById('cotModalDetalle')); cotAbrirObs(obs.dataset.cotObs, 'editar'); }
-    else if (ord) cotGenerarOrden(ord.dataset.cotOrden);
-    else if (pru) cotGenerarOrdenPrueba(pru.dataset.cotOrdenPrueba);
+  // Botones de la pantalla de detalle (los mismos que antes estaban en la tabla y en la ventana)
+  document.getElementById('pan-cot').addEventListener('click', e => {
+    const q = a => e.target.closest(`[data-cot-${a}]`);
+    let b;
+    if (e.target.closest('[data-pan-volver]')) panVolver();
+    else if ((b = q('excel'))) cotGenerarExcel([b.dataset.cotExcel]);
+    else if ((b = q('pdf'))) cotGenerarPDF(b.dataset.cotPdf, b.dataset.tipo);
+    else if ((b = q('orden-prueba'))) cotGenerarOrdenPrueba(b.dataset.cotOrdenPrueba);
+    else if ((b = q('orden'))) cotGenerarOrden(b.dataset.cotOrden);
+    else if ((b = q('modulo'))) cotMandarAModulo(b.dataset.cotModulo);
+    else if ((b = q('continuar'))) cotAbrirCostos(b.dataset.cotContinuar);
+    else if ((b = q('editar'))) cotAbrirEditar(b.dataset.cotEditar);
+    else if ((b = q('obs'))) cotAbrirObs(b.dataset.cotObs, 'editar');
+    else if ((b = q('eliminar'))) cotEliminar(b.dataset.cotEliminar);
   });
   document.getElementById('cotGrid').addEventListener('keydown', e => {
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('tr[data-cot-toggle]')) {

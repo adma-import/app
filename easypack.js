@@ -42,8 +42,8 @@ const epSel = new Set();
 /* ---------- Utilidades ---------- */
 const epNum = (v, dec = 2) => Number(v).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: dec });
 const epCop = v => '$ ' + Math.round(v).toLocaleString('es-CO');
-const epEstadoDe = c => c.anulada ? 'anulada' : (c.costosEp ? 'cotizada' : 'pendiente');
-const EP_ESTADOS = { pendiente: 'Pendiente', cotizada: 'Cotizada', anulada: 'Anulada' };
+const epEstadoDe = c => c.anulada ? 'anulada' : (c.modulo === 'easypack' && c.estado === 'finalizada' ? 'finalizada' : (c.costosEp ? 'cotizada' : 'pendiente'));
+const EP_ESTADOS = { pendiente: 'Pendiente', cotizada: 'Cotizada', finalizada: 'Finalizada', anulada: 'Anulada' };
 const epIco = n => `<svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS[n]}</svg>`;
 const epFechaHoy = () => {                               // dd/mmm/aaaa en hora de Bogotá
   const [a, m, d] = (typeof hoyBogota === 'function' ? hoyBogota() : new Date().toISOString().slice(0, 10)).split('-');
@@ -78,21 +78,22 @@ const epPrecioUnidad = (r, modalidad) => modalidad === 'aerea' ? r.precioAereo :
 
 /* ---------- Interfaz ---------- */
 function epConstruirUI() {
-  const sec = document.getElementById('easypack');
+  const sec = document.getElementById('easypack-cot');   // pestaña Cotizaciones del módulo (la arma cotizaciones.js)
   if (!sec) return false;
   sec.innerHTML = `
-    <div class="cot-barra"><h2 class="cot-titulo">EasyPack</h2>
+    <div class="cot-barra">
+      <div class="cot-cabecera"><h2 class="cot-titulo">EasyPack · Cotizaciones</h2>
+        <button type="button" class="btn cot-btn-crear" id="epBtnNueva" title="Crear una cotización de EasyPack"><svg class="cot-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS.crear}</svg><span>Crear cotización</span></button></div>
       <div class="cot-filtros">
         <input type="search" id="epBuscar" placeholder="Buscar por No., cliente, empresa, NIT, producto…" aria-label="Buscar cotizaciones de EasyPack" autocomplete="off">
-        <label class="cot-filtro"><span>Filtrar por estado</span><select id="epFiltroEstado" aria-label="Filtrar por estado"><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="cotizada">Cotizada</option><option value="anulada">Anulada</option></select></label>
+        <label class="cot-filtro"><span>Filtrar por estado</span><select id="epFiltroEstado" aria-label="Filtrar por estado"><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="cotizada">Cotizada</option><option value="finalizada">Finalizada</option><option value="anulada">Anulada</option></select></label>
       </div>
       <p id="epConteo" class="cot-conteo" aria-live="polite"></p>
       <div class="cot-acciones">
         <button type="button" class="btn btn-chico" id="epBtnPdfSel" hidden></button>
         <button type="button" class="cot-enlace" id="epBtnLimpiarSel" hidden>Quitar selección</button>
       </div></div>
-    <div id="epGrid" class="cot-tabla-wrap" aria-live="polite"><p class="lista-vacia">Cargando cotizaciones…</p></div>
-    <button type="button" id="epBtnNueva" class="cot-fab" aria-label="Nueva cotización de EasyPack" title="Nueva cotización de EasyPack">+</button>`;
+    <div id="epGrid" class="cot-tabla-wrap" aria-live="polite"><p class="lista-vacia">Cargando cotizaciones…</p></div>`;
 
   const m = document.createElement('div');
   m.innerHTML = `
@@ -208,9 +209,12 @@ function epPintar() {
     const precio = k && cotOk(k.precioUnidad) ? `${epCop(k.precioUnidad)} <small>(${EP_MODALIDAD[k.modalidad] || ''})</small>` : '—';
     const acc = est === 'anulada'
       ? `<button type="button" class="cot-btn-tabla" data-ep-copia="${c.id}" title="Crear una copia con el siguiente consecutivo">${epIco('enviar')}<span>Crear copia</span></button>`
+      : est === 'finalizada'
+      ? `<button type="button" class="cot-btn-tabla" data-ep-pdf="${c.id}" title="Descargar la cotización en PDF">${epIco('pdf')}<span>PDF</span></button>`
       : [
         `<button type="button" class="cot-btn-tabla" data-ep-costos="${c.id}" title="${k ? 'Editar costos' : 'Llenar los costos'}">${epIco('excel')}<span>${k ? 'Editar costos' : 'Costos'}</span></button>`,
         k ? `<button type="button" class="cot-btn-tabla" data-ep-pdf="${c.id}" title="Descargar la cotización en PDF">${epIco('pdf')}<span>PDF</span></button>` : '',
+        k ? `<button type="button" class="cot-btn-tabla cot-btn-modulo" data-ep-finalizar="${c.id}" title="Pasar a Compras Finalizadas">${epIco('enviar')}<span>Compra finalizada</span></button>` : '',
         `<button type="button" class="cot-btn-tabla cot-btn-ico" data-ep-editar="${c.id}" title="Editar datos" aria-label="Editar datos de la cotización ${c.consecutivo}">${epIco('editar')}</button>`,
         `<button type="button" class="cot-btn-tabla cot-btn-ico cot-btn-peligro" data-ep-anular="${c.id}" title="Anular (conserva el consecutivo)" aria-label="Anular la cotización ${c.consecutivo}">${epIco('borrar')}</button>`
       ].join('');
@@ -338,6 +342,23 @@ async function epCrear(datos) {
     });
   });
   return n;
+}
+
+/* ---------- Compra finalizada: la cotización pasa a Compras Finalizadas de EasyPack (pagos del cliente) ---------- */
+async function epFinalizar(id) {
+  const c = epLista.find(x => x.id === id);
+  if (!c || c.anulada || !c.costosEp || c.modulo) return;
+  if (!confirm(`¿Pasar la cotización No. ${c.consecutivo} de ${c.cliente} a Compras Finalizadas?
+
+Desde allí se registran los pagos.`)) return;
+  const datos = {
+    estado: 'finalizada', modulo: 'easypack',
+    enviadaEn: firebase.firestore.FieldValue.serverTimestamp(), enviadaPor: sesionActual ? sesionActual.nombre : '',
+    finalizadaEn: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if (!Array.isArray(c.pagos)) datos.pagos = [];
+  try { await cotRef().doc(id).update(datos); epSel.delete(id); }
+  catch (err) { console.error(err); alert('No se pudo pasar la cotización a Compras Finalizadas.'); }
 }
 
 /* ---------- Anular y copiar ---------- */
@@ -590,6 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if ((id = g('editar'))) epAbrirEditar(id);
     else if ((id = g('anular'))) epAnular(id);
     else if ((id = g('copia'))) epCopiar(id);
+    else if ((id = g('finalizar'))) epFinalizar(id);
   });
 
   // Al cerrar sesión se cierran también las ventanas de EasyPack
