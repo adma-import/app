@@ -25,7 +25,7 @@ const EP_K = {
   RECARGO_1: 1.05,           // N = L × 1.05
   RECARGO_2: 1.1,            // O = N × 1.1
   FACTOR_COSTO: 0.14,        // U = N × 0.14  (costo del producto en USD)
-  AEREO_COP_KG: { NORMAL: 85000, ESPECIAL: 85000 },   // tarifa aérea: 85.000 COP por kg ÷ dólar (Sheet2!G2 y G3)
+  AEREO_USD_KG: { NORMAL: 18, ESPECIAL: 23 },          // tarifa aérea en USD por kg de caja (columna X del Excel: NORMAL 18, ESPECIAL 23)
   BASE_IMPUESTOS: 0.3,       // IVA y arancel se calculan sobre el 30 % del valor en COP
   IVA: 0.19,
   ARANCEL: 0.1,
@@ -43,8 +43,9 @@ let epPagina = 1, epPorPagina = 10;
 const epSel = new Set();
 
 /* ---------- Utilidades ---------- */
-const epNum = (v, dec = 2) => Number(v).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: dec });
-const epCop = v => '$ ' + Math.round(v).toLocaleString('es-CO');
+/* Sin redondeo: se muestran todos los decimales del valor (hasta 10, solo para quitar el ruido de coma flotante) */
+const epNum = (v, dec = 10) => Number(v).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: dec });
+const epCop = v => '$ ' + epNum(v);
 const epEstadoDe = c => c.anulada ? 'anulada' : (c.modulo === 'easypack' && c.estado === 'finalizada' ? 'finalizada' : (c.costosEp ? 'cotizada' : 'pendiente'));
 const EP_ESTADOS = { pendiente: 'Pendiente', cotizada: 'Cotizada', finalizada: 'Finalizada', anulada: 'Anulada' };
 const epIco = n => `<svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS[n]}</svg>`;
@@ -54,12 +55,12 @@ const epFechaHoy = () => {                               // dd/mmm/aaaa en hora 
 };
 
 /* ---------- Fórmulas del Excel ----------
-   Entradas (k): qtyCaja, alto, ancho, largo (cm), pesoUnit (g), precioUsd, tipo ('NORMAL'|'ESPECIAL'), gasto (USD), fleteBarco (COP por m³).
+   Entradas (k): qtyCaja, alto, ancho, largo (cm), pesoCaja (kg, se escribe a mano como en el Excel), precioUsd, tipo ('NORMAL'|'ESPECIAL'), gasto (USD), fleteBarco (COP por m³).
    trm = dólar a pesos. Devuelve null en lo que no se puede calcular (p. ej. el flete aéreo sin peso: "SIN PESO" en el Excel). */
 function epCalcular(k, trm) {
   const qty = k.qtyCaja > 0 ? k.qtyCaja : 0;
   const cbmCaja = (k.alto * k.ancho * k.largo) / 1e6;                       // H
-  const pesoCaja = (k.pesoUnit * qty) / 1000;                                // J (kg)
+  const pesoCaja = k.pesoCaja > 0 ? k.pesoCaja : 0;                          // J (kg, escrito a mano)
   const L = k.precioUsd / EP_K.DIV_PRECIO;
   const N = L * EP_K.RECARGO_1;
   const O = N * EP_K.RECARGO_2;
@@ -68,14 +69,14 @@ function epCalcular(k, trm) {
   const costoProdCop = costoProdUsd * trm;                                   // V
   const fleteMarUnidad = qty ? (k.fleteBarco * cbmCaja) / qty : 0;           // T
   const precioMaritimo = costoProdCop + fleteMarUnidad;                      // W
-  const tarifaAereaUsdKg = trm > 0 ? (EP_K.AEREO_COP_KG[k.tipo] || EP_K.AEREO_COP_KG.NORMAL) / trm : 0;   // Sheet2!G
-  const fleteAereoCajaCop = tarifaAereaUsdKg * pesoCaja * trm;               // Y
+  const fleteAereoCajaUsd = (EP_K.AEREO_USD_KG[k.tipo] || EP_K.AEREO_USD_KG.NORMAL) * pesoCaja;   // X
+  const fleteAereoCajaCop = fleteAereoCajaUsd * trm;                         // Y
   const fleteAereoUnidad = qty && fleteAereoCajaCop > 0 ? fleteAereoCajaCop / qty : null;   // Z
   const precioAereo = fleteAereoUnidad == null ? null : fleteAereoUnidad + costoProdCop;    // AB
   const iva = k.precioUsd * trm * EP_K.BASE_IMPUESTOS * EP_K.IVA;            // AC
   const arancel = k.precioUsd * trm * EP_K.BASE_IMPUESTOS * EP_K.ARANCEL;    // AE
   return { cbmCaja, pesoCaja, precioChinaUsd, costoProdUsd, costoProdCop, fleteMarUnidad, precioMaritimo,
-           fleteAereoUnidad, precioAereo, iva, arancel, nacionalizado: costoProdCop + iva + arancel };
+           fleteAereoUnidad, precioAereo, iva, arancel, nacionalizado: precioMaritimo - iva + arancel };   // AF = W - AC + AE
 }
 const epPrecioUnidad = (r, modalidad) => modalidad === 'aerea' ? r.precioAereo : r.precioMaritimo;
 
@@ -132,14 +133,14 @@ function epConstruirUI() {
       <div id="epErrorCostos" class="login-error" role="alert" hidden></div>
       <label class="login-campo"><span>Unidades por caja</span><input type="number" id="epQtyCaja" min="1" step="1" required></label>
       <div class="ep-trio">
-        <label class="login-campo"><span>Alto (cm)</span><input type="number" id="epAlto" min="0" step="0.01" required></label>
-        <label class="login-campo"><span>Ancho (cm)</span><input type="number" id="epAncho" min="0" step="0.01" required></label>
-        <label class="login-campo"><span>Largo (cm)</span><input type="number" id="epLargo" min="0" step="0.01" required></label>
+        <label class="login-campo"><span>Alto (cm)</span><input type="number" id="epAlto" min="0" step="any" required></label>
+        <label class="login-campo"><span>Ancho (cm)</span><input type="number" id="epAncho" min="0" step="any" required></label>
+        <label class="login-campo"><span>Largo (cm)</span><input type="number" id="epLargo" min="0" step="any" required></label>
       </div>
-      <label class="login-campo"><span>Peso unitario (g)</span><input type="number" id="epPesoUnit" min="0" step="0.01" required></label>
-      <label class="login-campo"><span>Precio del producto (USD)</span><input type="number" id="epPrecioUsd" min="0" step="0.01" required></label>
+      <label class="login-campo"><span>Peso por caja (kg)</span><input type="number" id="epPesoUnit" min="0" step="any" required></label>
+      <label class="login-campo"><span>Precio del producto (USD)</span><input type="number" id="epPrecioUsd" min="0" step="any" required></label>
       <label class="login-campo"><span>Tipo de tarifa</span><select id="epTipo"><option value="NORMAL">Normal</option><option value="ESPECIAL">Especial</option></select></label>
-      <label class="login-campo"><span>Gasto de emergencia (USD, informativo)</span><input type="number" id="epGasto" min="0" step="0.01"></label>
+      <label class="login-campo"><span>Gasto de emergencia (USD, informativo)</span><input type="number" id="epGasto" min="0" step="any"></label>
       <label class="login-campo"><span>Precio del flete marítimo (COP por m³)</span><select id="epFlete"></select></label>
       <label class="login-campo"><span>Modalidad de la cotización</span><select id="epModalidad"><option value="aerea">Aérea (${EP_ENTREGA_DIAS.aerea} días)</option><option value="maritima">Marítima (${EP_ENTREGA_DIAS.maritima} días)</option></select></label>
       <label class="login-campo cot-check"><span><input type="checkbox" id="epStock"> Hay stock disponible</span></label>
@@ -298,14 +299,14 @@ function epPintarDetalle() {
 
   const ok = v => v != null && Number.isFinite(Number(v));
   const l = (a, v, fmt) => ok(v) ? [a, fmt(v)] : null;
-  const n0 = v => epNum(v, 0), n2 = v => epNum(v), n3 = v => epNum(v, 3), n4 = v => epNum(v, 4);
+  const n0 = v => epNum(v, 0), n2 = v => epNum(v), n3 = v => epNum(v), n4 = v => epNum(v);
   const grupos = k ? [
     ['Caja y producto', [l('Unidades por caja', k.qtyCaja, n0), l('Alto (cm)', k.alto, n2), l('Ancho (cm)', k.ancho, n2), l('Largo (cm)', k.largo, n2),
-      l('Peso unitario (g)', k.pesoUnit, n2), l('CBM por caja', k.cbmCaja, n4), l('Peso por caja (kg)', k.pesoCaja, n3), ['Tipo de tarifa', k.tipo === 'ESPECIAL' ? 'Especial' : 'Normal']]],
+      l('CBM por caja', k.cbmCaja, n4), l('Peso por caja (kg)', k.pesoCaja, n3), ['Tipo de tarifa', k.tipo === 'ESPECIAL' ? 'Especial' : 'Normal']]],
     ['Precios', [l('Precio del producto (USD)', k.precioUsd, n2), l('Gasto de emergencia (USD)', k.gasto, n2), l('Dólar a pesos (TRM)', k.usdCop, n2),
-      l('Flete marítimo (COP por m³)', k.fleteBarco, epCop), l('Costo del producto (COP)', k.costoProdCop, epCop), l('Precio marítimo por unidad', k.precioMaritimo, epCop),
-      l('Precio aéreo por unidad', k.precioAereo, epCop), l('IVA por unidad', k.iva, epCop), l('Arancel por unidad', k.arancel, epCop),
-      l('Nacionalizado por unidad', k.nacionalizado, epCop), l('Precio de la cotización por unidad', k.precioUnidad, epCop)]]
+      l('Flete marítimo (COP por m³)', k.fleteBarco, epCop), l('Costo del producto (COP)', k.costoProdCop, epCop), l('IVA por unidad', k.iva, epCop), l('Arancel por unidad', k.arancel, epCop),
+      l('Nacionalizado por unidad', k.nacionalizado, epCop), l('Precio de la cotización por unidad', k.precioUnidad, epCop),
+      l('Precio marítimo por unidad', k.precioMaritimo, epCop), l('Precio aéreo por unidad', k.precioAereo, epCop)]]
   ].map(([t, ls]) => [t, ls.filter(Boolean)]) : [];
   const tablas = grupos.map(([t, ls]) => ls.length ? `
     <div class="pan-card"><h3 class="pan-sub">${cotEsc(t)}</h3>
@@ -476,7 +477,7 @@ function epLeerCostos() {
   const fleteSel = document.getElementById('epFlete');
   const fleteValor = parseFloat(fleteSel.selectedOptions[0] && fleteSel.selectedOptions[0].dataset.valor);
   return {
-    qtyCaja: v('epQtyCaja'), alto: v('epAlto'), ancho: v('epAncho'), largo: v('epLargo'), pesoUnit: v('epPesoUnit'),
+    qtyCaja: v('epQtyCaja'), alto: v('epAlto'), ancho: v('epAncho'), largo: v('epLargo'), pesoCaja: v('epPesoUnit'),
     precioUsd: v('epPrecioUsd'), tipo: document.getElementById('epTipo').value, gasto: v('epGasto') || 0,
     fleteId: fleteSel.value, fleteBarco: fleteValor,
     modalidad: document.getElementById('epModalidad').value, stock: document.getElementById('epStock').checked
@@ -496,7 +497,7 @@ function epActualizarResumen() {
   const k = epLeerCostos();
   const el = document.getElementById('epResumen');
   const trm = typeof TASAS !== 'undefined' ? TASAS.usdCop : null;
-  const faltan = [k.qtyCaja, k.alto, k.ancho, k.largo, k.pesoUnit, k.precioUsd, k.fleteBarco].some(x => !(x >= 0)) || !(k.qtyCaja > 0);
+  const faltan = [k.qtyCaja, k.alto, k.ancho, k.largo, k.pesoCaja, k.precioUsd, k.fleteBarco].some(x => !(x >= 0)) || !(k.qtyCaja > 0);
   if (faltan || !(trm > 0)) {
     el.innerHTML = !(trm > 0) ? 'No hay tasa del dólar a pesos todavía. Revisa Configuración › Datos › Tasas de cambio.' : 'Completa los datos para ver el cálculo.';
     return;
@@ -505,17 +506,17 @@ function epActualizarResumen() {
   const fila = (t, val) => `<tr><td>${t}</td><td class="cot-num">${val}</td></tr>`;
   el.innerHTML = `<table class="ep-calc"><tbody>
     ${fila('Dólar a pesos', epCop(trm))}
-    ${fila('CBM por caja', epNum(r.cbmCaja, 6))}
-    ${fila('Peso por caja', epNum(r.pesoCaja, 3) + ' kg')}
+    ${fila('CBM por caja', epNum(r.cbmCaja))}
+    ${fila('Peso por caja', epNum(r.pesoCaja) + ' kg')}
     ${fila('Precio China (USD, informativo)', epNum(r.precioChinaUsd))}
     ${fila('Costo del producto (COP, unidad)', epCop(r.costoProdCop))}
     ${fila('Flete marítimo (COP, unidad)', epCop(r.fleteMarUnidad))}
     ${fila('Flete aéreo (COP, unidad)', r.fleteAereoUnidad == null ? 'SIN PESO' : epCop(r.fleteAereoUnidad))}
-    ${fila('<strong>Precio marítimo (producto + flete)</strong>', '<strong>' + epCop(r.precioMaritimo) + '</strong>')}
-    ${fila('<strong>Precio aéreo (producto + flete)</strong>', '<strong>' + (r.precioAereo == null ? 'SIN PESO' : epCop(r.precioAereo)) + '</strong>')}
     ${fila('IVA (informativo)', epCop(r.iva))}
     ${fila('Arancel (informativo)', epCop(r.arancel))}
     ${fila('Costo nacionalizado marítimo (informativo)', epCop(r.nacionalizado))}
+    ${fila('<strong>Precio marítimo por unidad (producto + flete)</strong>', '<strong>' + epCop(r.precioMaritimo) + '</strong>')}
+    ${fila('<strong>Precio aéreo por unidad (producto + flete)</strong>', '<strong>' + (r.precioAereo == null ? 'SIN PESO' : epCop(r.precioAereo)) + '</strong>')}
   </tbody></table>
   <p>El precio del PDF es el de la modalidad elegida, sin impuestos.</p>`;
 }
@@ -531,7 +532,7 @@ function epAbrirCostos(id) {
   epRefrescarFletes(k && k.fleteId);
   if (k) {
     const s = (i, v) => { document.getElementById(i).value = v ?? ''; };
-    s('epQtyCaja', k.qtyCaja); s('epAlto', k.alto); s('epAncho', k.ancho); s('epLargo', k.largo); s('epPesoUnit', k.pesoUnit);
+    s('epQtyCaja', k.qtyCaja); s('epAlto', k.alto); s('epAncho', k.ancho); s('epLargo', k.largo); s('epPesoUnit', k.pesoCaja != null ? k.pesoCaja : (k.pesoUnit > 0 && k.qtyCaja > 0 ? k.pesoUnit * k.qtyCaja / 1000 : ''));
     s('epPrecioUsd', k.precioUsd); s('epTipo', k.tipo); s('epGasto', k.gasto); s('epModalidad', k.modalidad);
     document.getElementById('epStock').checked = !!k.stock;
   } else {
@@ -549,12 +550,12 @@ async function epGuardarCostos(e) {
   const k = epLeerCostos();
   const trm = typeof TASAS !== 'undefined' ? TASAS.usdCop : null;
   if (!(k.qtyCaja >= 1) || !Number.isInteger(k.qtyCaja)) return epError('epErrorCostos', 'Las unidades por caja deben ser un número entero mayor que cero.');
-  if (![k.alto, k.ancho, k.largo, k.pesoUnit, k.precioUsd].every(x => x >= 0)) return epError('epErrorCostos', 'Completa alto, ancho, largo, peso unitario y precio con valores válidos.');
+  if (![k.alto, k.ancho, k.largo, k.pesoCaja, k.precioUsd].every(x => x >= 0)) return epError('epErrorCostos', 'Completa alto, ancho, largo, peso por caja y precio con valores válidos.');
   if (!(k.fleteBarco >= 0)) return epError('epErrorCostos', 'Elige un precio de flete marítimo. Si la lista está vacía, agrégalo en Configuración › Datos › Fletes.');
   if (!(trm > 0)) return epError('epErrorCostos', 'No hay tasa del dólar a pesos. Revisa Configuración › Datos › Tasas de cambio.');
   const r = epCalcular(k, trm);
   const precioUnidad = epPrecioUnidad(r, k.modalidad);
-  if (precioUnidad == null) return epError('epErrorCostos', 'La modalidad aérea necesita el peso unitario (SIN PESO). Escríbelo o elige marítima.');
+  if (precioUnidad == null) return epError('epErrorCostos', 'La modalidad aérea necesita el peso por caja (SIN PESO). Escríbelo o elige marítima.');
   const costosEp = { ...k, ...r, precioUnidad, usdCop: trm, calculadoPor: sesionActual ? sesionActual.nombre : '' };
   Object.keys(costosEp).forEach(key => { if (typeof costosEp[key] === 'number' && !Number.isFinite(costosEp[key])) costosEp[key] = null; });
   const btn = document.getElementById('epBtnGuardarCostos');
