@@ -61,7 +61,7 @@ function cotConstruirUI() {
     <div id="cotGrid" class="cot-tabla-wrap" aria-live="polite"><p class="lista-vacia">Cargando cotizaciones…</p></div></div>`;
 
   // Pantallas completas (reemplazan a las ventanas modales de detalle): se muestran en lugar del módulo y tienen botón "Volver"
-  ['pan-cot', 'pan-oc'].forEach(pid => {
+  ['pan-cot', 'pan-oc', 'pan-oc-dup'].forEach(pid => {
     const s = document.createElement('section');
     s.id = pid; s.hidden = true; s.className = 'pan';
     document.querySelector('.modulos').appendChild(s);
@@ -70,7 +70,7 @@ function cotConstruirUI() {
   const modales = document.createElement('div');
   modales.innerHTML = `
   <div id="cotModalNueva" class="modal" hidden>
-    <div class="modal-fondo" data-cot-cerrar></div>
+    <div class="modal-fondo"></div>
     <form id="cotFormNueva" class="modal-tarjeta cot-modal" novalidate>
       <div class="modal-cabecera"><h2 id="cotNuevaTitulo">Nueva cotización</h2>
         <button type="button" class="modal-cerrar" data-cot-cerrar aria-label="Cerrar">✕</button></div>
@@ -78,6 +78,7 @@ function cotConstruirUI() {
       <label class="login-campo"><span>Nombre del cliente</span><input type="text" id="cotCliente" required></label>
       <label class="login-campo"><span>Cliente proveniente de</span><select id="cotOrigen" required><option value="">Selecciona…</option><option value="Adma Company">Adma Company</option><option value="Groupack">Groupack</option></select></label>
       <label class="login-campo" id="cotComercialWrap" hidden><span>Nombre del comercial que proporcionó el cliente</span><input type="text" id="cotComercial" autocomplete="off"></label>
+      <label class="login-campo"><span>Nombre del producto</span><input type="text" id="cotNombreProducto" autocomplete="off" required></label>
       <label class="login-campo"><span>Descripción del producto</span><textarea id="cotDescripcion" rows="3" required></textarea></label>
       <label class="login-campo"><span>Cantidad</span><input type="text" id="cotCantidad" inputmode="numeric" autocomplete="off" placeholder="Ej: 100 o un rango 50-100" required></label>
       <label class="login-campo"><span>Link</span><input type="url" id="cotLink" placeholder="https://" autocapitalize="none"></label>
@@ -92,7 +93,7 @@ function cotConstruirUI() {
   </div>
 
   <div id="cotModalCostos" class="modal" hidden>
-    <div class="modal-fondo" data-cot-cerrar></div>
+    <div class="modal-fondo"></div>
     <form id="cotFormCostos" class="modal-tarjeta cot-modal" novalidate>
       <div class="modal-cabecera"><h2 id="cotCostosTitulo">Costos</h2>
         <button type="button" class="modal-cerrar" data-cot-cerrar aria-label="Cerrar">✕</button></div>
@@ -125,7 +126,7 @@ function cotConstruirUI() {
   </div>
 
   <div id="cotModalObs" class="modal" hidden>
-    <div class="modal-fondo" data-cot-cerrar></div>
+    <div class="modal-fondo"></div>
     <form id="cotFormObs" class="modal-tarjeta cot-modal" novalidate>
       <div class="modal-cabecera"><h2 id="cotObsTitulo">Observaciones</h2>
         <button type="button" class="modal-cerrar" data-cot-cerrar aria-label="Cerrar">✕</button></div>
@@ -142,22 +143,22 @@ function cotConstruirUI() {
   </div>
 
   <div id="ocModalItems" class="modal" hidden>
-    <div class="modal-fondo" data-cot-cerrar></div>
+    <div class="modal-fondo"></div>
     <form id="ocFormItems" class="modal-tarjeta cot-modal" novalidate>
-      <div class="modal-cabecera"><h2>Orden de compra · No. Item manual</h2>
+      <div class="modal-cabecera"><h2 id="ocItemsTitulo">Orden de compra · Shipping Mark e Item No</h2>
         <button type="button" class="modal-cerrar" data-cot-cerrar aria-label="Cerrar">✕</button></div>
       <div id="ocErrorItems" class="login-error" role="alert" hidden></div>
-      <p class="cot-dato cot-calc">Escribe el No. Item de cada producto. Se imprime en la orden y queda guardado en ella.</p>
+      <p class="cot-dato cot-calc" id="ocItemsAyuda">Revisa y edita el Shipping Mark y el Item No de cada producto. Se imprimen en la orden y quedan guardados en ella.</p>
       <div id="ocItemsLista" class="oc-items-lista"></div>
       <div class="modal-acciones">
         <button type="button" class="btn secundario" data-cot-cerrar>Cancelar</button>
-        <button type="submit" class="btn" id="ocBtnItems">Generar orden</button>
+        <button type="submit" class="btn" id="ocBtnItems">Aceptar</button>
       </div>
     </form>
   </div>
 
   <div id="pgModalDetalle" class="modal" hidden>
-    <div class="modal-fondo" data-cot-cerrar></div>
+    <div class="modal-fondo"></div>
     <div class="modal-tarjeta cot-modal cot-modal-detalle" role="dialog" aria-modal="true" aria-labelledby="pgDetalleTitulo">
       <div class="modal-cabecera"><h2 id="pgDetalleTitulo">Cotización</h2>
         <button type="button" class="modal-cerrar" data-cot-cerrar aria-label="Cerrar">✕</button></div>
@@ -166,7 +167,7 @@ function cotConstruirUI() {
   </div>
 
   <div id="cotModalPago" class="modal" hidden>
-    <div class="modal-fondo" data-cot-cerrar></div>
+    <div class="modal-fondo"></div>
     <form id="cotFormPago" class="modal-tarjeta cot-modal" novalidate>
       <div class="modal-cabecera"><h2 id="cotPagoTitulo">Registrar pago</h2>
         <button type="button" class="modal-cerrar" data-cot-cerrar aria-label="Cerrar">✕</button></div>
@@ -187,7 +188,7 @@ function cotConstruirUI() {
   </div>
 
   <div id="cotModalPagoGpk" class="modal" hidden>
-    <div class="modal-fondo" data-cot-cerrar></div>
+    <div class="modal-fondo"></div>
     <form id="cotFormPagoGpk" class="modal-tarjeta cot-modal" novalidate>
       <div class="modal-cabecera"><h2 id="cotPagoGpkTitulo">Pago a Groupack</h2>
         <button type="button" class="modal-cerrar" data-cot-cerrar aria-label="Cerrar">✕</button></div>
@@ -205,7 +206,7 @@ function cotConstruirUI() {
   </div>
 
   <div id="cotModalPagoProv" class="modal" hidden>
-    <div class="modal-fondo" data-cot-cerrar></div>
+    <div class="modal-fondo"></div>
     <form id="cotFormPagoProv" class="modal-tarjeta cot-modal" novalidate>
       <div class="modal-cabecera"><h2 id="cotPagoProvTitulo">Pago a proveedor</h2>
         <button type="button" class="modal-cerrar" data-cot-cerrar aria-label="Cerrar">✕</button></div>
@@ -224,7 +225,7 @@ function cotConstruirUI() {
   </div>
 
   <div id="cotLightbox" class="modal cot-lightbox" role="dialog" aria-modal="true" aria-label="Imagen ampliada" hidden>
-    <div class="modal-fondo" data-cot-cerrar></div>
+    <div class="modal-fondo"></div>
     <button type="button" class="cot-lb-nav cot-lb-prev" id="cotLbPrev" aria-label="Imagen anterior">‹</button>
     <figure class="cot-lb-fig"><img id="cotLbImg" alt=""><figcaption id="cotLbConteo"></figcaption></figure>
     <button type="button" class="cot-lb-nav cot-lb-next" id="cotLbNext" aria-label="Imagen siguiente">›</button>
@@ -356,6 +357,7 @@ function cotAbrirEditar(id) {
   document.getElementById('cotOrigen').value = c.origen || '';
   document.getElementById('cotOrigen').disabled = !!(c.costos || c.modulo);   // el origen define comisión y módulo: no se cambia si ya tiene costos
   document.getElementById('cotComercial').value = c.comercial || '';
+  document.getElementById('cotNombreProducto').value = c.nombreProducto || '';
   document.getElementById('cotDescripcion').value = c.descripcion || '';
   document.getElementById('cotCantidad').value = cotEsRango(c) ? `${c.cantidadMin}-${c.cantidad}` : String(c.cantidad ?? '');
   document.getElementById('cotLink').value = c.link || '';
@@ -382,12 +384,14 @@ async function cotGuardarNueva(e) {
   e.preventDefault();
   const cliente = document.getElementById('cotCliente').value.trim();
   const descripcion = document.getElementById('cotDescripcion').value.trim();
+  const nombreProducto = document.getElementById('cotNombreProducto').value.trim();
   const cant = cotLeerCantidad(document.getElementById('cotCantidad').value);
   const link = document.getElementById('cotLink').value.trim();
 
   const origen = document.getElementById('cotOrigen').value;
   const comercial = origen === 'Adma Company' ? document.getElementById('cotComercial').value.trim() : '';
   if (!cliente || !descripcion) return cotError('cotErrorNueva', 'Escribe el nombre del cliente y la descripción.');
+  if (!nombreProducto) return cotError('cotErrorNueva', 'Escribe el nombre del producto.');
   if (!origen) return cotError('cotErrorNueva', 'Indica de dónde proviene el cliente.');
   if (origen === 'Adma Company' && !comercial) return cotError('cotErrorNueva', 'Escribe el nombre del comercial que proporcionó el cliente.');
   if (!cant) return cotError('cotErrorNueva', 'Escribe la cantidad como un número (100) o como un rango (50-100), mayor que cero.');
@@ -402,7 +406,7 @@ async function cotGuardarNueva(e) {
     if (typeof epAbrirNueva === 'function') {
       epAbrirNueva();
       const v = (id, val) => { document.getElementById(id).value = val; };
-      v('epCliente', cliente); v('epDescripcion', descripcion); v('epCantidad', cant.min < cant.max ? `${cant.min}-${cant.max}` : String(cant.max)); v('epLink', link);
+      v('epCliente', cliente); v('epProductoEs', nombreProducto); v('epDescripcion', descripcion); v('epCantidad', cant.min < cant.max ? `${cant.min}-${cant.max}` : String(cant.max)); v('epLink', link);
       if (typeof epImagenes !== 'undefined') { epImagenes = imgs; epPintarPrevias(); }
     }
     return;
@@ -413,7 +417,7 @@ async function cotGuardarNueva(e) {
   const btn = document.getElementById('cotBtnGuardar');
   btn.disabled = true;
   try {
-    const datos = { cliente, origen, comercial, descripcion, cantidad, cantidadMin: cant.min < cant.max ? cant.min : null, link, imagenes: cotImagenesForm };
+    const datos = { cliente, origen, comercial, nombreProducto, descripcion, cantidad, cantidadMin: cant.min < cant.max ? cant.min : null, link, imagenes: cotImagenesForm };
     if (cotNuevaEditId) await cotActualizarDatos(cotNuevaEditId, datos);
     else await cotRef().add({
       ...datos,
@@ -777,7 +781,7 @@ let cotDetalleModo = 'cot';
 function cotAlternar(id, modo = 'cot') {
   const c = cotLista.find(x => x.id === id);
   if (!c) return;
-  if (cotEsEP(c)) { cotIrAEasyPack(); return; }
+  if (cotEsEP(c)) { if (typeof epAbrirDetalle === 'function') epAbrirDetalle(id); return; }
   cotDetalleId = id; cotDetalleModo = modo;
   cotPintarDetalle();
   if (cotDetalleId) panAbrir('pan-cot');
@@ -818,16 +822,21 @@ function cotPintarDetalle() {
   const dato = (t, v) => v ? `<div class="pan-dato"><dt>${t}</dt><dd>${v}</dd></div>` : '';
   const obsEditable = !cotTieneOrden(c) && cotDetalleModo === 'cot';
   const datos = [
-    dato('Producto', cotEsc(c.descripcion)),
+    dato('Producto', cotEsc(c.nombreProducto || c.descripcion)),
+    c.nombreProducto ? dato('Descripción', cotEsc(c.descripcion || '')) : '',
     dato('Cliente', cotEsc(c.cliente)),
     dato('Cliente de', cotEsc(c.origen || '')),
     dato('Comercial', cotEsc(c.comercial || '')),
     dato('Cantidad', cotCantidadTxt(c)),
+    dato('Fecha de creación', c.creadoEn && c.creadoEn.toDate ? cotEsc(ocFechaTxt(c.creadoEn)) : ''),
     dato('Bróker', k && k.broker ? cotEsc(k.broker) : ''),
     dato('Tipo', cotEsStock(c) ? `${cotStockTipo(c)} (sin aumento ni comisión)` : ''),
     dato('Enviada a', c.modulo ? cotEsc(cotNombreModulo(c.modulo)) : ''),
     (est === 'finalizada' || c.observaciones) ? dato('Observaciones', (c.observaciones ? cotEsc(c.observaciones) : '<em>Sin observaciones</em>') + (obsEditable ? ` <button type="button" class="cot-enlace" data-cot-obs="${c.id}">Editar</button>` : '')) : '',
     cotTieneOrden(c) ? dato('Orden de compra', `${cotEsc(c.orden.booth)} · Item No ${cotEsc(c.orden.itemNo)} · Shipping Mark ${cotEsc(c.orden.marca)}`) : '',
+    cotDetalleModo === 'oc' && cotTieneOrden(c) ? dato('Fecha de entrega en bodega', `<input type="date" data-oc-campo="fechaBodega" data-oc-id="${c.id}" value="${cotEsc(c.orden.fechaBodega || '')}" aria-label="Fecha de entrega en bodega">`) : '',
+    cotDetalleModo === 'oc' && cotTieneOrden(c) ? dato('Fecha estimada de entrega del producto', `<input type="date" data-oc-campo="fechaEstimada" data-oc-id="${c.id}" value="${cotEsc(c.orden.fechaEstimada || '')}" aria-label="Fecha estimada de entrega del producto">`) : '',
+    cotDetalleModo === 'oc' && cotTieneOrden(c) ? dato('Estado de los productos', `<select data-oc-campo="estadoId" data-oc-id="${c.id}" aria-label="Estado de los productos"><option value="">Sin estado</option>${((typeof DATOS !== 'undefined' && DATOS.etiquetas) || []).map(et => `<option value="${cotEsc(et.id)}"${et.id === c.orden.estadoId ? ' selected' : ''}>${cotEsc(et.nombre)}</option>`).join('')}</select> ${ocEtiqueta(c.orden.estadoId) ? etiquetaHtml(ocEtiqueta(c.orden.estadoId)) : ''}`) : '',
     link && cotDetalleModo === 'cot' ? dato('Link', `<a href="${cotEsc(link)}" target="_blank" rel="noopener noreferrer">Ver link del producto</a>`) : ''
   ].join('');
 
@@ -887,6 +896,9 @@ function cotDimensionesImagen(src) {
 }
 
 const COT_TITULOS_PDF = { cotizar: 'A cotizar', cotizacion: 'Cotización', orden: 'Orden de compra' };
+
+/* PDF de cotización: solo el nombre del producto; las cotizaciones viejas (sin nombre) siguen mostrando la descripción */
+const cotNombrePDF = c => String((c && (c.nombreProducto || c.descripcion)) || '');
 
 async function cotGenerarPDF(id, tipo) {
   const c = cotLista.find(x => x.id === id);
@@ -1045,7 +1057,7 @@ async function cotGenerarPDFCotizacion(entrada) {
 
   /* ---- Cliente (con el producto si es uno solo; con el número de productos si son varios) ---- */
   doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
-  const desc1 = multi ? [] : doc.splitTextToSize(String(lista[0].descripcion || ''), ANCHO - 12);
+  const desc1 = multi ? [] : doc.splitTextToSize(String(cotNombrePDF(lista[0])), ANCHO - 12);
   const hCliente = multi ? 20 : 30 + desc1.length * 5;
   nuevaPaginaSi(hCliente);
   doc.setFillColor(...CLARO); doc.roundedRect(M, y, ANCHO, hCliente, 3, 3, 'F');
@@ -1068,7 +1080,7 @@ async function cotGenerarPDFCotizacion(entrada) {
     const r = rs[i], kc = c.costos || {};
     if (multi && i > 0) { doc.addPage(); y = CY; }   // con varios productos, cada uno va en su propia hoja
     doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
-    const d = multi ? doc.splitTextToSize(String(c.descripcion || ''), ANCHO - 4) : [];
+    const d = multi ? doc.splitTextToSize(String(cotNombrePDF(c)), ANCHO - 4) : [];
     const alto = rh => (multi ? 16 + 5 * d.length + (2 * rh + 6) + (9 + 2 * rh + 6) : 24 + (9 + 2 * rh + 5)) + (9 + 5 * rh + 6) + 36;
     RH = 8;                                           // si no cabe, las filas se achican para que el total quede en la misma hoja
     if (y + alto(8) > LIMITE) RH = 7;
@@ -1144,7 +1156,7 @@ async function cotGenerarPDFCotizacion(entrada) {
   if (multi) {
     doc.addPage(); y = CY;   // el resumen total va en una hoja nueva
     seccion('Resumen de la cotización');
-    lista.forEach((c, i) => fila(`${i + 1}. ${recortar(c.descripcion, 45)}`, cop(rs[i].totalConFlete)));
+    lista.forEach((c, i) => fila(`${i + 1}. ${recortar(cotNombrePDF(c), 45)}`, cop(rs[i].totalConFlete)));
     y += 8;
     nuevaPaginaSi(34);
     const totalGeneral = rs.every(r => r.totalConFlete != null) ? rs.reduce((t, r) => t + r.totalConFlete, 0) : null;
@@ -1163,7 +1175,7 @@ async function cotGenerarPDFCotizacion(entrada) {
     doc.addPage(); y = CY;
     for (const g of grupos) {
       if (multi) nuevaPaginaSi(84);
-      seccion(multi ? `Imágenes · ${g.i + 1}. ${recortar(g.c.descripcion, 26)}` : 'Imágenes del producto');
+      seccion(multi ? `Imágenes · ${g.i + 1}. ${recortar(cotNombrePDF(g.c), 26)}` : 'Imágenes del producto');
       const colW = (ANCHO - 6) / 2, maxH = 70;
       let col = 0, altoFila = 0;
       for (const src of g.imgs) {
@@ -1262,6 +1274,7 @@ async function cotGenerarExcel(ids) {
   const ws = wb.addWorksheet('A cotizar');
   ws.columns = [
     { header: 'Imagen de referencia', key: 'img', width: 26 },
+    { header: 'Nombre del producto', key: 'nombre', width: 30 },
     { header: 'Descripción', key: 'desc', width: 50 },
     { header: 'Cantidad', key: 'cant', width: 12 },
     { header: 'Link', key: 'link', width: 42 },
@@ -1279,7 +1292,7 @@ async function cotGenerarExcel(ids) {
     const k = c.costos || {};
     const link = cotLinkSeguro(c.link);
     const fila = ws.addRow({
-      desc: c.descripcion, cant: cotEsRango(c) ? `${c.cantidadMin}-${c.cantidad}` : c.cantidad, link: link ? { text: link, hyperlink: link } : null,
+      nombre: c.nombreProducto || '', desc: c.descripcion, cant: cotEsRango(c) ? `${c.cantidadMin}-${c.cantidad}` : c.cantidad, link: link ? { text: link, hyperlink: link } : null,
       pcs: k.unidadesPorCaja ?? null, rmb: k.valorUnidad ?? null, cbm: k.cbmCaja ?? null, peso: k.pesoCaja ?? null
     });
     fila.height = 105;
@@ -1401,7 +1414,7 @@ async function cotGenerarExcelGrupal(lista) {
     const num = v => (cotOk(v) ? v : null);
     celda('B', `COT-${String(c.id || '').slice(0, 5).toUpperCase()}`);
     celda('C', null);
-    celda('D', c.descripcion || '', { tam: String(c.descripcion || '').length > 110 ? 12 : 16 });
+    celda('D', cotNombrePDF(c), { tam: cotNombrePDF(c).length > 110 ? 12 : 16 });
     celda('E', null, { tam: 16 });
     celda('F', null, { tam: 16 });
     celda('G', link ? { text: link, hyperlink: link } : null, { fuente: 'Arial', tam: 14, color: 'FF1D4ED8', subrayado: true, h: 'left' });
@@ -1764,7 +1777,7 @@ function pgConstruirModulo(mod) {
   const sec = pgContenedor(mod);
   if (!sec) return;
   sec.innerHTML = `
-    <div class="cot-barra"><h2 class="cot-titulo">${cotEsc(cotNombreModulo(mod))}${mod === 'groupack' || mod === 'easypack' ? ' · Compras Finalizadas' : ''}</h2>
+    <div class="cot-barra"><h2 class="cot-titulo">${mod === 'easypack' && typeof EP_LOGO !== 'undefined' ? EP_LOGO : ''}${cotEsc(cotNombreModulo(mod))}${mod === 'groupack' || mod === 'easypack' ? ' · Compras Finalizadas' : ''}</h2>
       <div class="cot-filtros">
         <input type="search" data-pg-buscar placeholder="Buscar por cliente, flete o estado de pago…" aria-label="Buscar en ${cotEsc(cotNombreModulo(mod))}" autocomplete="off">
         <label class="cot-filtro"><span>Filtrar por pago</span><select data-pg-estado aria-label="Filtrar por estado de pago"><option value="">Todos</option><option value="sinpagar">Sin pagar</option><option value="abonado">Abonado</option><option value="pagado">Pagado</option></select></label>
@@ -2305,10 +2318,40 @@ function cotSeleccionarVisibles() {
   cotPintar();
 }
 
-/* Reserva el Booth y los Item No en una transacción (si dos personas generan a la vez, nunca se repiten) y marca las cotizaciones */
-async function ocReservar(lista, manuales) {
+/* Sugerencia de Shipping Mark e Item No para cada cotización (los siguientes de cada cliente). Solo lee el contador: no lo mueve.
+   Devuelve { idCotizacion: { marca, itemNo } }. Las de recompra / producto nuevo no llevan número sugerido (se escribe a mano). */
+async function ocSugerir(lista) {
+  let clientes = {};
+  try { const sc = await ocRefContador().get(); clientes = { ...((sc.exists && sc.data().clientes) || {}) }; } catch (err) { console.error(err); }
+  const res = {};
+  lista.forEach(c => {
+    const clave = cotNombreClave(c.cliente);
+    if (cotEsStock(c)) { res[c.id] = { marca: `${clave}-ADMA-GPK`, itemNo: '' }; return; }
+    clientes[clave] = (clientes[clave] || 0) + 1;
+    res[c.id] = { marca: `${clave}-ADMA-GPK`, itemNo: `${clave}${clientes[clave]}` };
+  });
+  return res;
+}
+
+/* Registra en el contador del cliente un Item No que sigue el patrón "ClienteN" (para que el siguiente no se repita).
+   Devuelve true si el número es manual (no sigue el patrón o es de recompra), y entonces no toca el contador. */
+function ocContarItem(clientes, cliente, marca, itemNo, esStock) {
+  const clave = cotNombreClave(cliente);
+  const m = new RegExp('^' + clave.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\d+)$').exec(String(itemNo));
+  if (esStock || !m || marca !== `${clave}-ADMA-GPK`) return true;
+  clientes[clave] = Math.max(clientes[clave] || 0, Number(m[1]));
+  return false;
+}
+
+const ocFechaOrden = () => {
   const d0 = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
-  const fecha = `${d0.getFullYear()}年  ${String(d0.getMonth() + 1).padStart(2, '0')}月  ${String(d0.getDate()).padStart(2, '0')}日`;
+  return `${d0.getFullYear()}年  ${String(d0.getMonth() + 1).padStart(2, '0')}月  ${String(d0.getDate()).padStart(2, '0')}日`;
+};
+
+/* Reserva el Booth en una transacción (si dos personas generan a la vez, nunca se repiten) y marca las cotizaciones.
+   datos: { idCotizacion: { marca, itemNo } } ya revisados por el usuario. */
+async function ocReservar(lista, datos) {
+  const fecha = ocFechaOrden();
   const ordenes = {};
   await db.runTransaction(async tx => {
     const rc = ocRefContador();
@@ -2320,13 +2363,9 @@ async function ocReservar(lista, manuales) {
     const booth = Math.max(Number.isInteger(d.booth) ? d.booth : 0, OC_BOOTH_INICIAL);
     const clientes = { ...(d.clientes || {}) };
     lista.forEach((c, i) => {
-      const clave = cotNombreClave(c.cliente);
-      if (manuales) {                                  // recompra: el No. Item lo escribe el usuario y no mueve el contador del cliente
-        ordenes[c.id] = { booth, fila: i, itemNo: manuales[c.id], marca: `${clave}-ADMA-GPK`, manual: true, fecha, creadaPor: sesionActual ? sesionActual.nombre : '' };
-        return;
-      }
-      clientes[clave] = (clientes[clave] || 0) + 1;
-      ordenes[c.id] = { booth, fila: i, itemNo: `${clave}${clientes[clave]}`, marca: `${clave}-ADMA-GPK`, fecha, creadaPor: sesionActual ? sesionActual.nombre : '' };
+      const x = datos[c.id];
+      const manual = ocContarItem(clientes, c.cliente, x.marca, x.itemNo, cotEsStock(c));
+      ordenes[c.id] = { booth, fila: i, itemNo: x.itemNo, marca: x.marca, ...(manual ? { manual: true } : {}), fecha, creadaPor: sesionActual ? sesionActual.nombre : '' };
     });
     tx.set(rc, { booth: booth + 1, clientes }, { merge: true });
     lista.forEach(c => tx.update(cotRef().doc(c.id), { orden: { ...ordenes[c.id], creadaEn: firebase.firestore.FieldValue.serverTimestamp() } }));
@@ -2334,26 +2373,33 @@ async function ocReservar(lista, manuales) {
   return ordenes;
 }
 
-/* Ventana para escribir a mano el No. Item de cada cotización (recompra). Devuelve { idCotizacion: itemNo } o null si se cancela. */
+/* Ventana para revisar y editar el Shipping Mark y el Item No de cada producto.
+   valores: { idCotizacion: { marca, itemNo } } (precargados). Devuelve lo que quedó escrito o null si se cancela. */
 let ocItemsResolver = null;
-function ocPedirItems(lista) {
+function ocPedirDatos(lista, valores, { titulo = 'Orden de compra · Shipping Mark e Item No', boton = 'Aceptar' } = {}) {
   return new Promise(resolve => {
     ocItemsResolver = resolve;
-    document.getElementById('ocItemsLista').innerHTML = lista.map(c =>
-      `<label class="login-campo"><span>${cotEsc(c.cliente)} · ${cotEsc(String(c.descripcion || '').slice(0, 60))}</span>
-        <input type="text" data-oc-item="${cotEsc(c.id)}" maxlength="40" autocomplete="off" placeholder="No. Item"></label>`).join('');
+    document.getElementById('ocItemsTitulo').textContent = titulo;
+    document.getElementById('ocBtnItems').textContent = boton;
+    document.getElementById('ocItemsLista').innerHTML = lista.map(c => {
+      const v = valores[c.id] || {};
+      return `<div class="oc-item-par"><strong>${cotEsc(c.cliente)} · ${cotEsc(cotNombrePDF(c).slice(0, 60))}</strong>
+        <label class="login-campo"><span>SHIPPING MARK</span><input type="text" data-oc-marca="${cotEsc(c.id)}" value="${cotEsc(v.marca || '')}" maxlength="60" autocomplete="off"></label>
+        <label class="login-campo"><span>ITEM NO</span><input type="text" data-oc-item="${cotEsc(c.id)}" value="${cotEsc(v.itemNo || '')}" maxlength="40" autocomplete="off"></label></div>`;
+    }).join('');
     cotError('ocErrorItems', '');
     cotAbrir('ocModalItems');
-    const p = document.querySelector('#ocItemsLista input'); if (p) p.focus();
+    const p = document.querySelector('#ocItemsLista input[data-oc-item]'); if (p) p.focus();
   });
 }
 function ocEnviarItems(e) {
   e.preventDefault();
-  const campos = [...document.querySelectorAll('#ocItemsLista [data-oc-item]')];
-  const valores = campos.map(i => i.value.trim());
-  if (valores.some(v => !v)) return cotError('ocErrorItems', 'Escribe el No. Item de todas las cotizaciones.');
-  if (new Set(valores.map(v => v.toLowerCase())).size !== valores.length) return cotError('ocErrorItems', 'Hay No. Item repetidos en esta orden.');
-  const res = {}; campos.forEach((i, n) => { res[i.dataset.ocItem] = valores[n]; });
+  const marcas = [...document.querySelectorAll('#ocItemsLista [data-oc-marca]')];
+  const items = [...document.querySelectorAll('#ocItemsLista [data-oc-item]')];
+  const mv = marcas.map(i => i.value.trim()), iv = items.map(i => i.value.trim());
+  if (mv.some(v => !v) || iv.some(v => !v)) return cotError('ocErrorItems', 'Escribe el Shipping Mark y el Item No de todos los productos.');
+  if (new Set(iv.map(v => v.toLowerCase())).size !== iv.length) return cotError('ocErrorItems', 'Hay Item No repetidos en esta orden.');
+  const res = {}; items.forEach((i, n) => { res[i.dataset.ocItem] = { marca: mv[n], itemNo: iv[n] }; });
   const f = ocItemsResolver; ocItemsResolver = null;
   document.getElementById('ocModalItems').hidden = true;
   if (f) f(res);
@@ -2382,29 +2428,37 @@ async function ocImprimir(lista, ord) {
   return true;
 }
 
-/* Orden de compra: recibe el id de una cotización o un arreglo de ids (varias cotizaciones en una sola orden). */
+/* Orden de compra: recibe el id de una cotización o un arreglo de ids (varias cotizaciones en una sola orden).
+   Siempre se piden el Shipping Mark y el Item No antes de generar el PDF (precargados y editables). */
 async function cotGenerarOrden(ids) {
   if (!window.jspdf) { alert('No se cargó la librería de PDF. Revisa tu conexión y recarga la página.'); return false; }
   const lista = (Array.isArray(ids) ? ids : [ids]).map(id => cotLista.find(x => x.id === id)).filter(c => c && c.costos);
   if (!lista.length) { alert('Esta cotización aún no tiene costos guardados.'); return false; }
   const conOrden = lista.filter(cotTieneOrden);
-  if (conOrden.length === lista.length) {            // ya generada: se vuelve a descargar el mismo PDF, sin tocar los consecutivos
+  if (conOrden.length === lista.length) {            // ya generada: se pide revisar Shipping Mark e Item No y se vuelve a descargar el PDF
     const booth = lista[0].orden.booth;
     const grupo = cotLista.filter(c => c.orden && c.orden.booth === booth).sort((a, b) => (a.orden.fila || 0) - (b.orden.fila || 0));
-    const ord = {}; grupo.forEach(c => { ord[c.id] = c.orden; });
+    const previos = {}; grupo.forEach(c => { previos[c.id] = { marca: c.orden.marca || '', itemNo: c.orden.itemNo || '' }; });
+    const nuevos = await ocPedirDatos(grupo, previos, { titulo: `Orden de compra ${booth} · Shipping Mark e Item No`, boton: 'Aceptar y descargar PDF' });
+    if (!nuevos) return false;
+    const cambios = grupo.filter(c => nuevos[c.id].marca !== previos[c.id].marca || nuevos[c.id].itemNo !== previos[c.id].itemNo);
+    try {
+      if (cambios.length) {
+        const batch = db.batch();
+        cambios.forEach(c => batch.update(cotRef().doc(c.id), { 'orden.marca': nuevos[c.id].marca, 'orden.itemNo': nuevos[c.id].itemNo, 'orden.manual': true }));
+        await batch.commit();
+      }
+    } catch (err) { console.error(err); alert('No se pudieron guardar los cambios del Shipping Mark / Item No. Se descarga el PDF igualmente.'); }
+    const ord = {}; grupo.forEach(c => { ord[c.id] = { ...c.orden, ...nuevos[c.id] }; });
     return ocImprimir(grupo, ord);
   }
   if (conOrden.length) { alert('Algunas de las cotizaciones seleccionadas ya tienen orden de compra. Selecciona solo cotizaciones sin orden.'); return false; }
-  const n = lista.length;
   const recompras = lista.filter(cotEsStock);
-  if (recompras.length && recompras.length !== n) { alert('No se pueden mezclar cotizaciones de recompra o producto nuevo con otras en la misma orden. Genera por separado las de recompra / producto nuevo.'); return false; }
-  let manuales = null;
-  if (recompras.length) {                                            // recompra: se pide el No. Item a mano
-    manuales = await ocPedirItems(lista);
-    if (!manuales) return false;
-  } else if (!confirm(`Se generará UNA orden de compra con ${n} cotización${n > 1 ? 'es' : ''}.\n\nSe asignarán el consecutivo y los Item No consecutivos y NO se podrá generar otra vez (después solo podrás volver a descargar el mismo PDF).\n\n¿Continuar?`)) return false;
+  if (recompras.length && recompras.length !== lista.length) { alert('No se pueden mezclar cotizaciones de recompra o producto nuevo con otras en la misma orden. Genera por separado las de recompra / producto nuevo.'); return false; }
+  const datos = await ocPedirDatos(lista, await ocSugerir(lista), { titulo: 'Generar orden de compra · Shipping Mark e Item No', boton: 'Generar orden' });
+  if (!datos) return false;
   let ord;
-  try { ord = await ocReservar(lista, manuales); }
+  try { ord = await ocReservar(lista, datos); }
   catch (err) {
     console.error('No se pudo reservar el consecutivo:', err);
     alert(err.message === 'YA_TIENE_ORDEN' ? 'Alguien más acaba de generar la orden de compra de una de estas cotizaciones. Actualiza e inténtalo de nuevo.'
@@ -2426,6 +2480,8 @@ let ocPagoBooth = null;
 const OC_ESTADOS = { sinpagar: 'Sin pagar', pagado: 'Pagado' };
 const ocPagoDe = g => g.items[0].orden.pagoProveedor || null;
 const ocEstadoPago = g => ocPagoDe(g) ? 'pagado' : 'sinpagar';
+const ocEtiqueta = id => (typeof DATOS !== 'undefined' && DATOS.etiquetas || []).find(e => e.id === id) || null;
+const ocIconoDup = '<svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
 const ocMontoTxt = p => p.moneda === 'RMB' ? '¥ ' + cotNum(p.monto, 2) : '$ ' + cotNum(p.monto, 2) + ' ' + (p.moneda || 'COP');
 
 const ocMonto = c => {                      // mismo cálculo que el PDF: precio por unidad × cajas × unidades por caja (RMB)
@@ -2445,7 +2501,7 @@ function ocGrupos() {
   return [...mapa.entries()].map(([booth, items]) => {
     items.sort((a, b) => (a.orden.fila || 0) - (b.orden.fila || 0));
     const o0 = items[0].orden;
-    return { booth, items, total: items.reduce((t, c) => t + ocMonto(c), 0), fecha: ocFechaTxt(o0.creadaEn), por: o0.creadaPor || '' };
+    return { booth, items, total: items.reduce((t, c) => t + ocMonto(c), 0), fecha: ocFechaTxt(o0.creadaEn), por: o0.creadaPor || '', anulada: !!o0.anulada, anuladaPor: o0.anuladaPor || '' };
   }).sort((a, b) => b.booth - a.booth);
 }
 
@@ -2471,7 +2527,7 @@ function ocConstruirModulo() {
     <div class="cot-barra"><h2 class="cot-titulo">Órdenes de compra</h2>
       <div class="cot-filtros">
         <input type="search" data-oc-buscar placeholder="Buscar por consecutivo, cliente, Item No o producto…" aria-label="Buscar órdenes de compra" autocomplete="off">
-        <label class="cot-filtro"><span>Filtrar por estado de pago</span><select data-oc-estado aria-label="Filtrar por estado de pago"><option value="">Todos</option><option value="sinpagar">Sin pagar</option><option value="pagado">Pagado</option></select></label>
+        <label class="cot-filtro"><span>Filtrar por estado de pago</span><select data-oc-estado aria-label="Filtrar por estado de pago"><option value="">Todos</option><option value="sinpagar">Sin pagar</option><option value="pagado">Pagado</option><option value="anulada">Anulada</option></select></label>
       </div>
       <p class="cot-conteo" data-oc-conteo aria-live="polite"></p></div>
     <div class="cot-tabla-wrap" data-oc-grid aria-live="polite"><p class="lista-vacia">Cargando…</p></div>`;
@@ -2487,6 +2543,8 @@ function ocConstruirModulo() {
     const pdf = e.target.closest('[data-oc-pdf]');
     const anu = e.target.closest('[data-oc-anular]');
     const pago = e.target.closest('[data-oc-pago]');
+    const dup = e.target.closest('[data-oc-dup]');
+    if (dup) { ocAbrirDuplicar(Number(dup.dataset.ocDup)); return; }
     if (pago) { ocAbrirPagoProv(Number(pago.dataset.ocPago)); return; }
     if (anu) { ocAnular(Number(anu.dataset.ocAnular)); return; }
     if (pdf) { cotGenerarOrden([pdf.dataset.ocPdf]); return; }
@@ -2520,7 +2578,9 @@ function ocConstruirModulo() {
     const pago = e.target.closest('[data-oc-pago]');
     const pcomp = e.target.closest('[data-oc-pcomp]');
     const pquitar = e.target.closest('[data-oc-pquitar]');
-    if (pago) ocAbrirPagoProv(Number(pago.dataset.ocPago));
+    const dup = e.target.closest('[data-oc-dup]');
+    if (dup) ocAbrirDuplicar(Number(dup.dataset.ocDup));
+    else if (pago) ocAbrirPagoProv(Number(pago.dataset.ocPago));
     else if (pcomp) ocVerComprobante(Number(pcomp.dataset.ocPcomp));
     else if (pquitar) ocQuitarPagoProv(Number(pquitar.dataset.ocPquitar));
     else if (anu) ocAnular(Number(anu.dataset.ocAnular));
@@ -2543,7 +2603,7 @@ function ocPintar() {
   const q = cotNorm(sec.querySelector('[data-oc-buscar]').value).split(/\s+/).filter(Boolean);
   const est = sec.querySelector('[data-oc-estado]').value;
   const lista = todos.filter(g => {
-    if (est && ocEstadoPago(g) !== est) return false;
+    if (est && (est === 'anulada' ? !g.anulada : g.anulada || ocEstadoPago(g) !== est)) return false;
     const pajar = cotNorm([g.booth, g.por, g.fecha, ...g.items.flatMap(c => [c.cliente, c.descripcion, c.orden.itemNo, c.orden.marca, c.costos && c.costos.broker])].join(' '));
     return q.every(t => pajar.includes(t));
   });
@@ -2560,7 +2620,7 @@ function ocPintar() {
     const clientes = [...new Set(g.items.map(c => c.cliente))].join(', ');
     const brokers = [...new Set(g.items.map(c => ((c.costos && c.costos.broker) || '').trim()).filter(Boolean))].join(', ');
     const pe = ocEstadoPago(g);
-    return `<tr class="cot-fila" data-oc-toggle="${cotEsc(g.booth)}" tabindex="0" title="Ver detalle">
+    return `<tr class="cot-fila${g.anulada ? ' ep-anulada' : ''}" data-oc-toggle="${cotEsc(g.booth)}" tabindex="0" title="Ver detalle">
       <td><strong>${cotEsc(g.booth)}</strong></td>
       <td>${cotEsc(g.fecha)}</td>
       <td class="cot-col-prod"><span class="cot-prod-txt" title="${cotEsc(clientes)}">${cotEsc(clientes)}</span>${[...new Set(g.items.map(cotStockTipo).filter(Boolean))].map(cotStockTag).join('')}</td>
@@ -2568,11 +2628,12 @@ function ocPintar() {
       <td class="cot-num">¥ ${cotNum(g.total, 2)}</td>
       <td>${brokers ? cotEsc(brokers) : '—'}</td>
       <td>${cotEsc(g.por)}</td>
-      <td><span class="cot-estado pg-${pe}">${OC_ESTADOS[pe]}</span></td>
+      <td>${g.anulada ? '<span class="cot-estado cot-e-anulada">Anulada</span>' : `<span class="cot-estado pg-${pe}">${OC_ESTADOS[pe]}</span>`}</td>
       <td class="cot-col-acc"><div class="cot-acciones-oc">
-        ${pe === 'pagado' ? '' : `<button type="button" class="cot-btn-tabla cot-btn-modulo" data-oc-pago="${cotEsc(g.booth)}" title="Registrar pago al proveedor">${ico('pago')}<span>Registrar pago</span></button>`}
-        <button type="button" class="cot-btn-tabla" data-oc-pdf="${g.items[0].id}" title="Descargar la orden de compra en PDF">${ico('pdf')}<span>Descargar PDF</span></button>
-        ${pgEsSuper() ? `<button type="button" class="cot-btn-tabla cot-btn-ico cot-btn-peligro" data-oc-anular="${cotEsc(g.booth)}" title="Eliminar orden de compra" aria-label="Eliminar la orden de compra ${cotEsc(g.booth)}">${ico('borrar')}</button>` : ''}</div></td>
+        ${pe === 'pagado' || g.anulada ? '' : `<button type="button" class="cot-btn-tabla cot-btn-modulo" data-oc-pago="${cotEsc(g.booth)}" title="Registrar pago al proveedor">${ico('pago')}<span>Registrar pago</span></button>`}
+        ${g.anulada ? '' : `<button type="button" class="cot-btn-tabla" data-oc-pdf="${g.items[0].id}" title="Descargar la orden de compra en PDF">${ico('pdf')}<span>Descargar PDF</span></button>`}
+        <button type="button" class="cot-btn-tabla cot-btn-ico" data-oc-dup="${cotEsc(g.booth)}" title="Duplicar la orden de compra" aria-label="Duplicar la orden de compra ${cotEsc(g.booth)}">${ocIconoDup}</button>
+        ${pgEsSuper() && !g.anulada ? `<button type="button" class="cot-btn-tabla cot-btn-ico cot-btn-peligro" data-oc-anular="${cotEsc(g.booth)}" title="Anular orden de compra" aria-label="Anular la orden de compra ${cotEsc(g.booth)}">${ico('borrar')}</button>` : ''}</div></td>
     </tr>`;
   }).join('');
   grid.innerHTML = `<div class="cot-tabla-card"><table class="cot-tabla cot-tabla-oc">
@@ -2599,11 +2660,12 @@ function ocPintarDetalle() {
   sec.innerHTML = `
     <div class="pan-barra">
       <button type="button" class="btn secundario btn-chico pan-volver" data-pan-volver>${ico('volver')}<span>Volver</span></button>
-      <div class="pan-titulo"><h2>Orden de compra · ${cotEsc(g.booth)}${cotEsc(tipos)}</h2><span class="cot-estado pg-${ocEstadoPago(g)}">${OC_ESTADOS[ocEstadoPago(g)]}</span></div>
+      <div class="pan-titulo"><h2>Orden de compra · ${cotEsc(g.booth)}${cotEsc(tipos)}</h2>${g.anulada ? '<span class="cot-estado cot-e-anulada">Anulada</span>' : `<span class="cot-estado pg-${ocEstadoPago(g)}">${OC_ESTADOS[ocEstadoPago(g)]}</span>`}</div>
       <div class="pan-acciones">
-        <button type="button" class="cot-btn-tabla" data-oc-pdf="${g.items[0].id}">${ico('pdf')}<span>Descargar PDF</span></button>
-        ${ocPagoDe(g) ? '' : `<button type="button" class="cot-btn-tabla cot-btn-modulo" data-oc-pago="${cotEsc(g.booth)}">${ico('pago')}<span>Registrar pago a proveedor</span></button>`}
-        ${pgEsSuper() ? `<button type="button" class="cot-btn-tabla cot-btn-peligro" data-oc-anular="${cotEsc(g.booth)}">${ico('borrar')}<span>Anular orden</span></button>` : ''}
+        ${g.anulada ? '' : `<button type="button" class="cot-btn-tabla" data-oc-pdf="${g.items[0].id}">${ico('pdf')}<span>Descargar PDF</span></button>`}
+        <button type="button" class="cot-btn-tabla" data-oc-dup="${cotEsc(g.booth)}" title="Duplicar la orden de compra" aria-label="Duplicar la orden de compra">${ocIconoDup}</button>
+        ${ocPagoDe(g) || g.anulada ? '' : `<button type="button" class="cot-btn-tabla cot-btn-modulo" data-oc-pago="${cotEsc(g.booth)}">${ico('pago')}<span>Registrar pago a proveedor</span></button>`}
+        ${pgEsSuper() && !g.anulada ? `<button type="button" class="cot-btn-tabla cot-btn-peligro" data-oc-anular="${cotEsc(g.booth)}">${ico('borrar')}<span>Anular orden</span></button>` : ''}
       </div>
     </div>
     <div class="pan-card"><dl class="pan-datos">
@@ -2611,6 +2673,7 @@ function ocPintarDetalle() {
       ${g.por ? `<div class="pan-dato"><dt>Creada por</dt><dd>${cotEsc(g.por)}</dd></div>` : ''}
       <div class="pan-dato"><dt>Cotizaciones</dt><dd>${g.items.length}</dd></div>
       <div class="pan-dato"><dt>Total</dt><dd>¥ ${cotNum(g.total, 2)}</dd></div>
+      ${g.anulada ? `<div class="pan-dato"><dt>Estado</dt><dd><span class="cot-estado cot-e-anulada">Anulada</span>${g.anuladaPor ? ' por ' + cotEsc(g.anuladaPor) : ''}</dd></div>` : ''}
     </dl>${ocBloquePago(g)}</div>
     <div class="pan-card">
       <h3 class="pan-sub">Ítems de la orden</h3>
@@ -2650,12 +2713,15 @@ function ocPintarTablaDetalle() {
       <td class="cot-num">${cotNum(ctn * upc, 0)}</td>
       <td class="cot-num">¥ ${cotNum(k.valorUnidad || 0, 2)}</td>
       <td class="cot-num">¥ ${cotNum(ocMonto(c), 2)}</td>
+      <td>${cotEsc(c.orden.fechaBodega || '—')}</td>
+      <td>${cotEsc(c.orden.fechaEstimada || '—')}</td>
+      <td>${ocEtiqueta(c.orden.estadoId) && typeof etiquetaHtml === 'function' ? etiquetaHtml(ocEtiqueta(c.orden.estadoId)) : '—'}</td>
       <td>${c.observaciones ? `<span class="cot-prod-txt">${cotEsc(c.observaciones)}</span>` : '—'}</td>
       <td class="cot-col-acc"><button type="button" class="cot-btn-tabla" data-oc-ver="${c.id}" title="Ver la cotización de este ítem">Ver cotización</button></td>
     </tr>`;
   }).join('');
   cont.innerHTML = `<div class="cot-tabla-card"><table class="cot-tabla">
-    <thead><tr><th>Item No</th><th>Cliente</th><th>Producto</th><th class="cot-num">Cajas</th><th class="cot-num">Unid. por caja</th><th class="cot-num">Cantidad</th><th class="cot-num">Precio unidad</th><th class="cot-num">Monto</th><th>Notes</th><th class="cot-col-acc">Acciones</th></tr></thead>
+    <thead><tr><th>Item No</th><th>Cliente</th><th>Producto</th><th class="cot-num">Cajas</th><th class="cot-num">Unid. por caja</th><th class="cot-num">Cantidad</th><th class="cot-num">Precio unidad</th><th class="cot-num">Monto</th><th>Entrega en bodega</th><th>Entrega estimada</th><th>Estado de los productos</th><th>Notes</th><th class="cot-col-acc">Acciones</th></tr></thead>
     <tbody>${filas}</tbody></table></div>${ocPagHtml(lista.length, ini, pagina.length, paginas, ocDetPorPagina, ocDetPagina, 'data-ocd-pag', 'data-ocd-por-pagina')}`;
 }
 
@@ -2729,42 +2795,157 @@ function ocVerComprobante(booth) {
   w.document.close();
 }
 
-/* Anular una orden de compra (solo Super usuario). Quita `orden` de sus cotizaciones (vuelven a quedar finalizadas, listas para generar otra vez)
-   y devuelve los consecutivos SOLO si es seguro: el Booth se baja únicamente si esta fue la última orden, y el contador de cada cliente
-   solo si su Item No fue el último que se asignó. Si ya hay órdenes posteriores queda un hueco en la numeración, nunca un duplicado. */
+/* Anular una orden de compra (solo Super usuario). La orden NO se borra: queda en la lista marcada como "Anulada" (orden.anulada en sus cotizaciones),
+   conserva su consecutivo (no se reutiliza) y todavía se puede duplicar. */
 async function ocAnular(booth) {
   if (!pgEsSuper()) { alert('Solo el Super usuario puede anular órdenes de compra.'); return; }
   const g = ocGrupos().find(x => x.booth === booth);
-  if (!g) return;
+  if (!g || g.anulada) return;
   if (ocPagoDe(g)) { alert('Esta orden ya tiene registrado el pago al proveedor. Quita primero ese pago (desde el detalle de la orden) y luego anúlala.'); return; }
-  if (!confirm(`¿Anular la orden de compra ${booth}?\n\nLas ${g.items.length} cotización(es) quedarán sin orden y podrás generarla de nuevo. Si esta es la última orden, el consecutivo se devuelve; si no, queda un hueco en la numeración.\n\nSi el PDF ya se envió al proveedor, no reutilices ese número.`)) return;
-  let resultado = { boothDevuelto: false };
+  if (!confirm(`¿Anular la orden de compra ${booth}?\n\nQuedará en la lista marcada como "Anulada" y su consecutivo no se vuelve a usar. Podrás duplicarla para crear una nueva.\n\nSi el PDF ya se envió al proveedor, avísale que la orden se anuló.`)) return;
+  try {
+    const batch = db.batch();
+    g.items.forEach(c => batch.update(cotRef().doc(c.id), {
+      'orden.anulada': true, 'orden.anuladaPor': sesionActual ? sesionActual.nombre : '', 'orden.anuladaEn': firebase.firestore.FieldValue.serverTimestamp()
+    }));
+    await batch.commit();
+  } catch (err) {
+    console.error('No se pudo anular la orden:', err);
+    alert('No se pudo anular la orden. Revisa tu conexión y las reglas de Firestore.');
+    return;
+  }
+  alert(`Orden ${booth} anulada.`);
+}
+
+/* ---------- Duplicar una orden de compra ----------
+   Abre una pantalla con todos los datos de la orden para editarlos. "Vista previa" dibuja el PDF con Booth "PRUEBA" sin guardar nada;
+   "Crear" reserva un nuevo consecutivo y guarda la orden como cotizaciones nuevas (copias de las originales ya finalizadas). */
+let ocDupOrigen = null;
+const ocDupNum = v => { const n = parseFloat(String(v).replace(',', '.')); return Number.isFinite(n) ? n : NaN; };
+
+async function ocAbrirDuplicar(booth) {
+  const g = ocGrupos().find(x => x.booth === booth);
+  if (!g) return;
+  ocDupOrigen = g;
+  const sug = await ocSugerir(g.items);
+  const ico = n => `<svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS[n]}</svg>`;
+  const campo = (et, attr, val, tipo = 'text', extra = '') => `<label class="login-campo"><span>${et}</span><input type="${tipo}" ${attr} value="${cotEsc(val == null ? '' : val)}" ${extra} autocomplete="off"></label>`;
+  const tarjetas = g.items.map(c => {
+    const k = c.costos || {}, r = cotCalculos(c) || {};
+    const x = sug[c.id] || {};
+    return `<div class="pan-card oc-dup-item" data-dup-id="${cotEsc(c.id)}">
+      <div class="oc-dup-cab"><h3 class="pan-sub">Producto · ${cotEsc(c.cliente)}</h3>
+        <button type="button" class="cot-btn-tabla cot-btn-peligro" data-dup-quitar title="Quitar este producto de la copia">${ico('borrar')}<span>Quitar</span></button></div>
+      <div class="oc-dup-grid">
+        ${campo('Cliente', 'data-f="cliente"', c.cliente)}
+        ${campo('Nombre del producto', 'data-f="nombreProducto"', c.nombreProducto || '')}
+        ${campo('Cantidad total (unidades)', 'data-f="cantidad"', r.unidades != null ? r.unidades : c.cantidad, 'number', 'min="1" step="1"')}
+        ${campo('Unidades por caja', 'data-f="upc"', k.unidadesPorCaja || '', 'number', 'min="1" step="1"')}
+        ${campo('Precio por unidad (RMB)', 'data-f="precio"', k.valorUnidad != null ? k.valorUnidad : '', 'number', 'min="0" step="0.01"')}
+        ${campo('CBM por caja', 'data-f="cbm"', k.cbmCaja != null ? k.cbmCaja : '', 'number', 'min="0" step="0.0001"')}
+        ${campo('Peso por caja (kg)', 'data-f="peso"', cotOk(k.pesoCaja) ? k.pesoCaja : '', 'number', 'min="0" step="0.01"')}
+        ${campo('SHIPPING MARK', 'data-f="marca"', x.marca || c.orden.marca || '')}
+        ${campo('ITEM NO', 'data-f="itemNo"', x.itemNo || '')}
+      </div>
+      <label class="login-campo"><span>Descripción del producto</span><textarea data-f="descripcion" rows="2">${cotEsc(c.descripcion || '')}</textarea></label>
+      <label class="login-campo"><span>Observaciones (NOTES)</span><textarea data-f="observaciones" rows="3" maxlength="${COT_OBS_MAX}">${cotEsc(c.observaciones || '')}</textarea></label>
+    </div>`;
+  }).join('');
+  document.getElementById('pan-oc-dup').innerHTML = `
+    <div class="pan-barra">
+      <button type="button" class="btn secundario btn-chico pan-volver" data-pan-volver>${ico('volver')}<span>Volver</span></button>
+      <div class="pan-titulo"><h2>Duplicar orden de compra ${cotEsc(g.booth)}</h2></div>
+      <div class="pan-acciones">
+        <button type="button" class="cot-btn-tabla" data-dup-prueba>${ico('pdf')}<span>Vista previa</span></button>
+        <button type="button" class="cot-btn-tabla cot-btn-modulo" data-dup-crear>${ico('enviar')}<span>Crear orden</span></button>
+      </div>
+    </div>
+    <div id="ocDupError" class="login-error" role="alert" hidden></div>
+    <p class="cot-dato cot-calc">Edita lo que necesites. "Vista previa" genera el PDF de prueba sin guardar nada ni gastar consecutivos; "Crear orden" guarda la nueva orden con el siguiente consecutivo.</p>
+    ${tarjetas}`;
+  panAbrir('pan-oc-dup');
+}
+
+/* Lee y valida el formulario. Devuelve [{ origen: cotización original, ...valores }] o null (y muestra el error). */
+function ocDupLeer() {
+  const err = m => { const e = document.getElementById('ocDupError'); e.textContent = m || ''; e.hidden = !m; if (m) e.scrollIntoView({ block: 'center' }); return null; };
+  err('');
+  const tarjetas = [...document.querySelectorAll('#pan-oc-dup .oc-dup-item')];
+  if (!tarjetas.length) return err('La orden debe tener al menos un producto.');
+  const res = [];
+  for (const t of tarjetas) {
+    const origen = ocDupOrigen.items.find(c => c.id === t.dataset.dupId);
+    const f = n => t.querySelector(`[data-f="${n}"]`).value.trim();
+    const v = { origen, cliente: f('cliente'), nombreProducto: f('nombreProducto'), descripcion: f('descripcion'), observaciones: f('observaciones'),
+      cantidad: ocDupNum(f('cantidad')), upc: ocDupNum(f('upc')), precio: ocDupNum(f('precio')), cbm: ocDupNum(f('cbm')), peso: f('peso') === '' ? null : ocDupNum(f('peso')),
+      marca: f('marca'), itemNo: f('itemNo') };
+    const rotulo = v.cliente || 'un producto';
+    if (!v.cliente || !v.descripcion) return err(`Escribe el cliente y la descripción de ${rotulo}.`);
+    if (!(v.cantidad >= 1) || !(v.upc >= 1)) return err(`La cantidad y las unidades por caja de ${rotulo} deben ser mayores que cero.`);
+    if (!(v.precio >= 0) || !(v.cbm >= 0) || (v.peso != null && !(v.peso >= 0))) return err(`Revisa el precio, el CBM y el peso de ${rotulo}.`);
+    if (!v.marca || !v.itemNo) return err(`Escribe el Shipping Mark y el Item No de ${rotulo}.`);
+    res.push(v);
+  }
+  if (new Set(res.map(v => v.itemNo.toLowerCase())).size !== res.length) return err('Hay Item No repetidos en esta orden.');
+  return res;
+}
+
+/* Cotización "copia" con los valores editados (la usan la vista previa y la creación) */
+function ocDupCotizacion(v) {
+  const { id, orden, pagos, pagosGroupack, creadoEn, creadoPor, editadoEn, editadoPor, ...base } = v.origen;
+  const cajas = Math.ceil(v.cantidad / v.upc);
+  const costos = { ...(base.costos || {}), valorUnidad: v.precio, unidadesPorCaja: v.upc, cbmCaja: v.cbm, cajas, totalUnidades: cajas * v.upc };
+  if (v.peso != null) costos.pesoCaja = v.peso; else delete costos.pesoCaja;
+  return { ...base, cliente: v.cliente, nombreProducto: v.nombreProducto, descripcion: v.descripcion, observaciones: v.observaciones, cantidad: v.cantidad, cantidadMin: null, costos };
+}
+
+async function ocDupVistaPrevia() {
+  const vals = ocDupLeer();
+  if (!vals || !window.jspdf) { if (vals) alert('No se cargó la librería de PDF. Revisa tu conexión y recarga la página.'); return; }
+  const fecha = ocFechaOrden();
+  const lista = [], ord = {};
+  vals.forEach((v, i) => {
+    const c = { ...ocDupCotizacion(v), id: 'vp' + i };
+    lista.push(c);
+    ord[c.id] = { booth: 'PRUEBA', fila: i, itemNo: v.itemNo, marca: v.marca, fecha };
+  });
+  try { await ocImprimir(lista, ord); }
+  catch (err) { console.error('Error en la vista previa:', err); alert('No se pudo generar la vista previa.'); }
+}
+
+async function ocDupCrear() {
+  const vals = ocDupLeer();
+  if (!vals) return;
+  if (!confirm(`Se creará una nueva orden de compra con ${vals.length} producto${vals.length > 1 ? 's' : ''} y el siguiente consecutivo.\n\n¿Continuar?`)) return;
+  const fecha = ocFechaOrden();
+  const btn = document.querySelector('#pan-oc-dup [data-dup-crear]'); if (btn) btn.disabled = true;
+  let booth;
   try {
     await db.runTransaction(async tx => {
       const rc = ocRefContador();
-      const lecturas = await Promise.all([tx.get(rc), ...g.items.map(c => tx.get(cotRef().doc(c.id)))]);
-      const sc = lecturas[0], docs = lecturas.slice(1);
-      if (docs.some(d => !d.exists || !d.data().orden || d.data().orden.booth !== booth)) throw new Error('CAMBIO');
+      const sc = await tx.get(rc);
       const d = sc.exists ? sc.data() : {};
+      booth = Math.max(Number.isInteger(d.booth) ? d.booth : 0, OC_BOOTH_INICIAL);
       const clientes = { ...(d.clientes || {}) };
-      const partes = docs.filter(x => !x.data().orden.manual).map(x => {
-        const o = x.data().orden, clave = String(o.marca || '').split('-ADMA-GPK')[0], n = Number(String(o.itemNo || '').slice(clave.length));
-        return clave && Number.isInteger(n) ? { clave, n } : null;
-      }).filter(Boolean).sort((x, y) => y.n - x.n);
-      partes.forEach(({ clave, n }) => { if (clientes[clave] === n) clientes[clave] = n - 1; });
-      const devolver = Number.isInteger(d.booth) && d.booth === booth + 1;
-      resultado.boothDevuelto = devolver;
-      tx.set(rc, devolver ? { booth, clientes } : { clientes }, { merge: true });
-      g.items.forEach(c => tx.update(cotRef().doc(c.id), { orden: firebase.firestore.FieldValue.delete() }));
+      const nuevos = vals.map((v, i) => {
+        const c = ocDupCotizacion(v);
+        const manual = ocContarItem(clientes, v.cliente, v.marca, v.itemNo, cotEsStock(c));
+        return { ...c, creadoPor: sesionActual ? sesionActual.nombre : '', creadoEn: firebase.firestore.FieldValue.serverTimestamp(), duplicadaDe: ocDupOrigen.booth,
+          orden: { booth, fila: i, itemNo: v.itemNo, marca: v.marca, ...(manual ? { manual: true } : {}), fecha, creadaPor: sesionActual ? sesionActual.nombre : '',
+            creadaEn: firebase.firestore.FieldValue.serverTimestamp(), duplicadaDe: ocDupOrigen.booth } };
+      });
+      tx.set(rc, { booth: booth + 1, clientes }, { merge: true });
+      nuevos.forEach(n => tx.set(cotRef().doc(), n));
     });
   } catch (err) {
-    console.error('No se pudo anular la orden:', err);
-    alert(err.message === 'CAMBIO' ? 'La orden cambió mientras la anulabas. Actualiza e inténtalo de nuevo.' : 'No se pudo anular la orden. Revisa tu conexión y las reglas de Firestore.');
+    console.error('No se pudo duplicar la orden:', err);
+    alert('No se pudo crear la orden. Revisa tu conexión y las reglas de Firestore.');
+    if (btn) btn.disabled = false;
     return;
   }
-  ocDetalleBooth = null;
-  if (typeof panVolver === 'function') panVolver();
-  alert(resultado.boothDevuelto ? `Orden ${booth} anulada. El consecutivo volvió a ${booth}.` : `Orden ${booth} anulada. Había órdenes posteriores, así que el consecutivo ${booth} queda sin usar.`);
+  ocDupOrigen = null;
+  mostrarModulo(OC_MODULO);
+  alert(`Orden ${booth} creada.`);
 }
 
 /* MODO PRUEBA (solo Super usuario): dibuja y descarga la orden de compra con Booth "PRUEBA" e Item No ficticios.
@@ -2870,17 +3051,29 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'ArrowLeft') cotLbMover(-1);
     else if (e.key === 'ArrowRight') cotLbMover(1);
   });
-  document.addEventListener('keydown', e => {
-    if (e.key !== 'Escape') return;
-    const abiertas = [...document.querySelectorAll('.modal')].filter(m => !m.hidden);
-    if (abiertas.length) cotCerrarModal(abiertas[abiertas.length - 1]);
-  });
 
   document.getElementById('cotUnidadesCaja').addEventListener('input', cotActualizarCajas);
   document.getElementById('cotVia').addEventListener('change', cotToggleVia);
   document.getElementById('cotRecompra').addEventListener('change', cotToggleRecompra);
   document.getElementById('cotProdNuevo').addEventListener('change', cotToggleRecompra);
   document.getElementById('ocFormItems').addEventListener('submit', ocEnviarItems);
+  document.getElementById('pan-oc-dup').addEventListener('click', e => {
+    if (e.target.closest('[data-pan-volver]')) { if (confirm('¿Salir sin crear la orden? Se perderán los cambios.')) panVolver(); return; }
+    const q = e.target.closest('[data-dup-quitar]');
+    if (q) {
+      const t = q.closest('.oc-dup-item');
+      if (document.querySelectorAll('#pan-oc-dup .oc-dup-item').length <= 1) { alert('La orden debe tener al menos un producto.'); return; }
+      t.remove(); return;
+    }
+    if (e.target.closest('[data-dup-prueba]')) ocDupVistaPrevia();
+    else if (e.target.closest('[data-dup-crear]')) ocDupCrear();
+  });
+  document.getElementById('pan-cot').addEventListener('change', async e => {
+    const el = e.target.closest('[data-oc-campo]');
+    if (!el) return;
+    try { await cotRef().doc(el.dataset.ocId).update({ ['orden.' + el.dataset.ocCampo]: el.value || '' }); }
+    catch (err) { console.error(err); alert('No se pudo guardar el cambio.'); }
+  });
   document.getElementById('cotOrigen').addEventListener('change', cotToggleComercial);
   document.getElementById('cotArchivosReales').addEventListener('change', cotManejarArchivosReales);
   document.getElementById('cotPreviasReales').addEventListener('click', e => {

@@ -159,6 +159,19 @@
             <div id="listaOrigenes" role="list"></div>
           </div>
         </div>
+
+        <div class="panel" style="margin-top:var(--s4)">
+          <div class="cabecera"><h2 style="border:none;background:none;padding:0"><button type="button" class="acordeon-btn" aria-expanded="false" aria-controls="cuerpoEtiquetas">Etiquetas</button></h2></div>
+          <div class="cuerpo" id="cuerpoEtiquetas" hidden>
+            <p class="tasa-meta" style="margin-bottom:var(--s4)">Etiquetas personalizadas con nombre y color. Se usan, por ejemplo, para el estado de los productos en las órdenes de compra.</p>
+            <div class="tasa-form" style="margin-bottom:var(--s4)">
+              <input type="text" id="etiquetaNombre" maxlength="40" placeholder="Nombre de la etiqueta" aria-label="Nombre de la etiqueta" autocomplete="off">
+              <input type="color" id="etiquetaColor" value="#2563eb" aria-label="Color de la etiqueta" style="width:3rem;height:2.4rem;padding:2px">
+              <button class="btn btn-chico" type="button" id="btnAgregarEtiqueta">Agregar</button>
+            </div>
+            <div id="listaEtiquetas" role="list"></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -166,7 +179,7 @@
 </div>
 
 <div id="modalUsuario" class="modal" hidden>
-  <div class="modal-fondo" data-cerrar-modal></div>
+  <div class="modal-fondo"></div>
   <form id="formUsuario" class="modal-tarjeta" novalidate>
     <div class="modal-cabecera"><h2 id="modalUsuarioTitulo">Agregar usuario</h2>
       <button type="button" class="modal-cerrar" data-cerrar-modal aria-label="Cerrar">✕</button></div>

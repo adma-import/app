@@ -32,6 +32,9 @@ const EP_K = {
   GASTO_DEFECTO: { NORMAL: 2, ESPECIAL: 3 }           // USD, "gasto de emergencia" por tipo de tarifa
 };
 
+/* Logo del módulo: un frasco de perfume y un termo (envases) */
+const EP_LOGO = '<svg class="ep-logo" viewBox="0 0 48 32" width="44" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="14" width="16" height="15" rx="3"/><rect x="8" y="9" width="6" height="5"/><rect x="7" y="4" width="8" height="5" rx="1.5"/><path d="M7 21h8"/><path d="M32 6h8v4h-8z"/><path d="M31 10h10v16a3 3 0 0 1-3 3h-4a3 3 0 0 1-3-3z"/><path d="M31 17h10"/></svg>';
+
 let epLista = [];
 let epImagenes = [];
 let epEditId = null;                   // cotización cuyos datos se editan (null = creando)
@@ -82,7 +85,7 @@ function epConstruirUI() {
   if (!sec) return false;
   sec.innerHTML = `
     <div class="cot-barra">
-      <div class="cot-cabecera"><h2 class="cot-titulo">EasyPack · Cotizaciones</h2>
+      <div class="cot-cabecera"><h2 class="cot-titulo">${EP_LOGO}EasyPack · Cotizaciones</h2>
         <button type="button" class="btn cot-btn-crear" id="epBtnNueva" title="Crear una cotización de EasyPack"><svg class="cot-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS.crear}</svg><span>Crear cotización</span></button></div>
       <div class="cot-filtros">
         <input type="search" id="epBuscar" placeholder="Buscar por No., cliente, empresa, NIT, producto…" aria-label="Buscar cotizaciones de EasyPack" autocomplete="off">
@@ -98,7 +101,7 @@ function epConstruirUI() {
   const m = document.createElement('div');
   m.innerHTML = `
   <div id="epModalNueva" class="modal" hidden>
-    <div class="modal-fondo" data-ep-cerrar></div>
+    <div class="modal-fondo"></div>
     <form id="epFormNueva" class="modal-tarjeta cot-modal" novalidate>
       <div class="modal-cabecera"><h2 id="epNuevaTitulo">Nueva cotización EasyPack</h2>
         <button type="button" class="modal-cerrar" data-ep-cerrar aria-label="Cerrar">✕</button></div>
@@ -122,7 +125,7 @@ function epConstruirUI() {
   </div>
 
   <div id="epModalCostos" class="modal" hidden>
-    <div class="modal-fondo" data-ep-cerrar></div>
+    <div class="modal-fondo"></div>
     <form id="epFormCostos" class="modal-tarjeta cot-modal" novalidate>
       <div class="modal-cabecera"><h2 id="epCostosTitulo">Costos</h2>
         <button type="button" class="modal-cerrar" data-ep-cerrar aria-label="Cerrar">✕</button></div>
@@ -148,6 +151,11 @@ function epConstruirUI() {
     </form>
   </div>`;
   document.getElementById('appShell').appendChild(m);
+  if (!document.getElementById('pan-ep')) {
+    const s = document.createElement('section');
+    s.id = 'pan-ep'; s.hidden = true; s.className = 'pan';
+    document.querySelector('.modulos').appendChild(s);
+  }
   return true;
 }
 
@@ -160,6 +168,7 @@ function epRecibir(lista) {                                     // lo llama coti
   epLista = lista.slice().sort((a, b) => (b.consecutivo || 0) - (a.consecutivo || 0));
   [...epSel].forEach(id => { if (!epLista.some(c => c.id === id && !c.anulada)) epSel.delete(id); });
   if (document.getElementById('epGrid')) epPintar();
+  if (epDetalleId) epPintarDetalle();
 }
 
 function epFiltradas() {
@@ -207,7 +216,8 @@ function epPintar() {
     const est = epEstadoDe(c);
     const k = c.costosEp;
     const precio = k && cotOk(k.precioUnidad) ? `${epCop(k.precioUnidad)} <small>(${EP_MODALIDAD[k.modalidad] || ''})</small>` : '—';
-    const acc = est === 'anulada'
+    const ver = `<button type="button" class="cot-btn-tabla" data-ep-ver="${c.id}" title="Ver el detalle de la cotización" aria-label="Ver la cotización ${c.consecutivo}">${epIco('ver')}<span>Ver</span></button>`;
+    const acc = ver + (est === 'anulada'
       ? `<button type="button" class="cot-btn-tabla" data-ep-copia="${c.id}" title="Crear una copia con el siguiente consecutivo">${epIco('enviar')}<span>Crear copia</span></button>`
       : est === 'finalizada'
       ? `<button type="button" class="cot-btn-tabla" data-ep-pdf="${c.id}" title="Descargar la cotización en PDF">${epIco('pdf')}<span>PDF</span></button>`
@@ -217,9 +227,9 @@ function epPintar() {
         k ? `<button type="button" class="cot-btn-tabla cot-btn-modulo" data-ep-finalizar="${c.id}" title="Pasar a Compras Finalizadas">${epIco('enviar')}<span>Compra finalizada</span></button>` : '',
         `<button type="button" class="cot-btn-tabla cot-btn-ico" data-ep-editar="${c.id}" title="Editar datos" aria-label="Editar datos de la cotización ${c.consecutivo}">${epIco('editar')}</button>`,
         `<button type="button" class="cot-btn-tabla cot-btn-ico cot-btn-peligro" data-ep-anular="${c.id}" title="Anular (conserva el consecutivo)" aria-label="Anular la cotización ${c.consecutivo}">${epIco('borrar')}</button>`
-      ].join('');
+      ].join(''));
     const foto = (c.imagenes || [])[0];
-    return `<tr class="cot-fila${est === 'anulada' ? ' ep-anulada' : ''}">
+    return `<tr class="cot-fila${est === 'anulada' ? ' ep-anulada' : ''}" data-ep-ver="${c.id}" tabindex="0" title="Ver detalle">
       <td class="cot-col-sel"><input type="checkbox" data-ep-sel="${c.id}"${epSel.has(c.id) ? ' checked' : ''}${k && est !== 'anulada' ? '' : ' disabled'} aria-label="Seleccionar la cotización ${c.consecutivo}"></td>
       <td class="ep-col-no"><strong>${cotEsc(c.consecutivo)}</strong></td>
       <td class="cot-col-cliente">${foto ? `<img class="pg-thumb" src="${cotEsc(foto)}" alt="">` : ''}<strong>${cotEsc(c.cliente)}</strong>${c.empresa ? `<br><small>${cotEsc(c.empresa)}${c.nit ? ' · NIT ' + cotEsc(c.nit) : ''}</small>` : ''}</td>
@@ -234,6 +244,83 @@ function epPintar() {
   grid.innerHTML = `<div class="cot-tabla-card"><table class="cot-tabla">
     <thead><tr><th class="cot-col-sel"><span class="sr-only">Seleccionar</span></th><th>No.</th><th>Cliente</th><th>Producto</th><th class="cot-num">Cantidad</th><th class="cot-num">Precio unidad</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
     <tbody>${filas}</tbody></table></div>${epControlesPagina(lista.length, ini, pagina.length, paginas)}`;
+}
+
+/* ---------- Pantalla de detalle (igual que la de Groupack, con los datos propios de EasyPack) ---------- */
+let epDetalleId = null;
+function epAbrirDetalle(id) {
+  if (!epLista.some(c => c.id === id)) return;
+  epDetalleId = id;
+  epPintarDetalle();
+  if (epDetalleId) panAbrir('pan-ep');
+}
+
+function epPintarDetalle() {
+  const sec = document.getElementById('pan-ep');
+  const c = epLista.find(x => x.id === epDetalleId);
+  if (!c) { epDetalleId = null; if (sec && !sec.hidden && typeof panVolver === 'function') panVolver(); return; }
+  const est = epEstadoDe(c), k = c.costosEp, link = cotLinkSeguro(c.link);
+  const btn = (ico, txt, attr, cls = '') => `<button type="button" class="cot-btn-tabla ${cls}" ${attr} title="${cotEsc(txt)}">${epIco(ico)}<span>${cotEsc(txt)}</span></button>`;
+  const acciones = est === 'anulada'
+    ? btn('enviar', 'Crear copia', `data-ep-copia="${c.id}"`)
+    : est === 'finalizada'
+    ? btn('pdf', 'Cotización PDF', `data-ep-pdf="${c.id}"`)
+    : [
+      btn('excel', k ? 'Editar costos' : 'Llenar costos', `data-ep-costos="${c.id}"`),
+      k ? btn('pdf', 'Cotización PDF', `data-ep-pdf="${c.id}"`) : '',
+      k ? btn('enviar', 'Compra finalizada', `data-ep-finalizar="${c.id}"`, 'cot-btn-modulo') : '',
+      btn('editar', 'Editar datos', `data-ep-editar="${c.id}"`),
+      btn('borrar', 'Anular', `data-ep-anular="${c.id}"`, 'cot-btn-peligro')
+    ].join('');
+
+  const dato = (t, v) => v ? `<div class="pan-dato"><dt>${t}</dt><dd>${v}</dd></div>` : '';
+  const datos = [
+    dato('No. de cotización', cotEsc(c.consecutivo)),
+    dato('Producto', cotEsc(c.nombreProducto || c.descripcion)),
+    dato('Producto (inglés)', cotEsc(c.nombreProductoEn || '')),
+    c.nombreProducto ? dato('Descripción', cotEsc(c.descripcion || '')) : '',
+    dato('Cliente', cotEsc(c.cliente)),
+    dato('Empresa', cotEsc(c.empresa || '')),
+    dato('NIT', cotEsc(c.nit || '')),
+    dato('Cliente de', cotEsc(c.origen || EP_ORIGEN)),
+    dato('Cantidad', cotCantidadTxt(c)),
+    dato('Fecha de creación', c.creadoEn && c.creadoEn.toDate ? cotEsc(ocFechaTxt(c.creadoEn)) : ''),
+    dato('Creada por', cotEsc(c.creadoPor || '')),
+    dato('Modalidad', k ? cotEsc(EP_MODALIDAD[k.modalidad] || '') : ''),
+    dato('Stock', k ? (k.stock ? 'Hay stock disponible' : 'Sin stock') : ''),
+    c.copiaDe ? dato('Copia de', 'No. ' + cotEsc(c.copiaDe)) : '',
+    c.anulada && c.anuladaPor ? dato('Anulada por', cotEsc(c.anuladaPor)) : '',
+    link ? dato('Link', `<a href="${cotEsc(link)}" target="_blank" rel="noopener noreferrer">Ver link del producto</a>`) : ''
+  ].join('');
+
+  const imgs = (c.imagenes || []).length
+    ? `<div class="pan-card"><h3 class="pan-sub">Imágenes de referencia</h3><div class="cot-miniaturas pan-imgs">${c.imagenes.map((src, i) => `<img src="${cotEsc(src)}" alt="Referencia ${i + 1} de ${cotEsc(c.cliente)}">`).join('')}</div></div>` : '';
+
+  const ok = v => v != null && Number.isFinite(Number(v));
+  const l = (a, v, fmt) => ok(v) ? [a, fmt(v)] : null;
+  const n0 = v => epNum(v, 0), n2 = v => epNum(v), n3 = v => epNum(v, 3), n4 = v => epNum(v, 4);
+  const grupos = k ? [
+    ['Caja y producto', [l('Unidades por caja', k.qtyCaja, n0), l('Alto (cm)', k.alto, n2), l('Ancho (cm)', k.ancho, n2), l('Largo (cm)', k.largo, n2),
+      l('Peso unitario (g)', k.pesoUnit, n2), l('CBM por caja', k.cbmCaja, n4), l('Peso por caja (kg)', k.pesoCaja, n3), ['Tipo de tarifa', k.tipo === 'ESPECIAL' ? 'Especial' : 'Normal']]],
+    ['Precios', [l('Precio del producto (USD)', k.precioUsd, n2), l('Gasto de emergencia (USD)', k.gasto, n2), l('Dólar a pesos (TRM)', k.usdCop, n2),
+      l('Flete marítimo (COP por m³)', k.fleteBarco, epCop), l('Costo del producto (COP)', k.costoProdCop, epCop), l('Precio marítimo por unidad', k.precioMaritimo, epCop),
+      l('Precio aéreo por unidad', k.precioAereo, epCop), l('IVA por unidad', k.iva, epCop), l('Arancel por unidad', k.arancel, epCop),
+      l('Nacionalizado por unidad', k.nacionalizado, epCop), l('Precio de la cotización por unidad', k.precioUnidad, epCop)]]
+  ].map(([t, ls]) => [t, ls.filter(Boolean)]) : [];
+  const tablas = grupos.map(([t, ls]) => ls.length ? `
+    <div class="pan-card"><h3 class="pan-sub">${cotEsc(t)}</h3>
+      <div class="cot-tabla-card"><table class="cot-tabla pan-tabla"><thead><tr><th>Concepto</th><th class="cot-num">Valor</th></tr></thead>
+        <tbody>${ls.map(([a, b]) => `<tr><td>${cotEsc(a)}</td><td class="cot-num">${cotEsc(b)}</td></tr>`).join('')}</tbody></table></div></div>` : '').join('');
+
+  sec.innerHTML = `
+    <div class="pan-barra">
+      <button type="button" class="btn secundario btn-chico pan-volver" data-pan-volver>${epIco('volver')}<span>Volver</span></button>
+      <div class="pan-titulo"><h2>${cotEsc(c.cliente)}</h2><span class="cot-estado cot-e-${est}">${EP_ESTADOS[est]}</span></div>
+      <div class="pan-acciones">${acciones}</div>
+    </div>
+    <div class="pan-card"><dl class="pan-datos">${datos}</dl></div>
+    ${imgs}
+    ${tablas}`;
 }
 
 function epActualizarAcciones() {
@@ -604,6 +691,23 @@ document.addEventListener('DOMContentLoaded', () => {
   $('epGrid').addEventListener('click', e => {
     const pg = e.target.closest('[data-ep-pag]');
     if (pg) { if (!pg.disabled) { epPagina += pg.dataset.epPag === 'next' ? 1 : -1; epPintar(); } return; }
+    const g = a => { const b = e.target.closest(`[data-ep-${a}]`); return b ? b.dataset['ep' + a[0].toUpperCase() + a.slice(1)] : null; };
+    let id;
+    if (e.target.closest('[data-ep-sel]')) return;
+    if ((id = g('costos'))) epAbrirCostos(id);
+    else if ((id = g('pdf'))) epGenerarPDF([id]);
+    else if ((id = g('editar'))) epAbrirEditar(id);
+    else if ((id = g('anular'))) epAnular(id);
+    else if ((id = g('copia'))) epCopiar(id);
+    else if ((id = g('finalizar'))) epFinalizar(id);
+    else if ((id = g('ver'))) epAbrirDetalle(id);
+  });
+  $('epGrid').addEventListener('keydown', e => {
+    const tr = e.target.closest('tr[data-ep-ver]');
+    if (tr && e.target === tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); epAbrirDetalle(tr.dataset.epVer); }
+  });
+  $('pan-ep').addEventListener('click', e => {
+    if (e.target.closest('[data-pan-volver]')) { panVolver(); return; }
     const g = a => { const b = e.target.closest(`[data-ep-${a}]`); return b ? b.dataset['ep' + a[0].toUpperCase() + a.slice(1)] : null; };
     let id;
     if ((id = g('costos'))) epAbrirCostos(id);

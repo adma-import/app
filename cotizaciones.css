@@ -256,3 +256,12 @@ body.menu-abierto .cot-fab { display: none; }
 /* ===== v21: producto nuevo ===== */
 .cot-oc.cot-prodnuevo { background: #d9f3e0; color: #14602f; border-color: #86cf9d; }
 .cot-stock-opc { display: flex; flex-direction: column; gap: 8px; }
+
+/* Etiquetas personalizadas (Configuración > Etiquetas) */
+.etiqueta { display: inline-block; padding: .15rem .65rem; border-radius: 999px; font-size: .8rem; font-weight: 600; line-height: 1.5; }
+
+/* Órdenes de compra: ventana Shipping Mark / Item No y pantalla de duplicar */
+.oc-item-par { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--border, #e2e8f0); }
+.oc-dup-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.oc-dup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.oc-dup-item .login-campo { margin-top: 12px; }

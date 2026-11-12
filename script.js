@@ -274,7 +274,7 @@ function initTasasUI() {
    { fletes: [{ id, valor }], comisionAdma: 5 }
    Global: DATOS.fletes, DATOS.comisionAdma (y evento 'datos-actualizados' en document). */
 const COMISION_ADMA_DEFECTO = 5;
-let DATOS = { fletes: [], comisionAdma: COMISION_ADMA_DEFECTO, origenes: [...APP_CONFIG.ORIGENES_BASE] };
+let DATOS = { fletes: [], comisionAdma: COMISION_ADMA_DEFECTO, origenes: [...APP_CONFIG.ORIGENES_BASE], etiquetas: [] };
 let desuscribirDatos = null;
 const refDatos = () => db.collection(APP_CONFIG.COLECCIONES.configuracion).doc('datos');
 
@@ -327,7 +327,62 @@ function pintarDatos(d) {
     }
     listaOri.appendChild(fila);
   });
+  // Etiquetas personalizadas: [{ id, nombre, color }]
+  DATOS.etiquetas = Array.isArray(d.etiquetas) ? d.etiquetas.filter(e => e && e.id && e.nombre) : [];
+  const listaEt = document.getElementById('listaEtiquetas');
+  listaEt.replaceChildren();
+  if (!DATOS.etiquetas.length) {
+    const p = document.createElement('p');
+    p.className = 'lista-vacia'; p.textContent = 'Aún no hay etiquetas.';
+    listaEt.appendChild(p);
+  }
+  DATOS.etiquetas.forEach(et => {
+    const fila = document.createElement('div');
+    fila.setAttribute('role', 'listitem');
+    fila.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:var(--s3);padding:var(--s2) 0;border-bottom:1px solid var(--border)';
+    const tag = document.createElement('span');
+    tag.className = 'etiqueta'; tag.textContent = et.nombre; tag.style.background = et.color || '#64748b';
+    tag.style.color = colorTextoSobre(et.color);
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'btn secundario btn-chico'; del.textContent = 'Eliminar';
+    del.setAttribute('aria-label', `Eliminar etiqueta ${et.nombre}`);
+    del.addEventListener('click', () => eliminarEtiqueta(et));
+    fila.append(tag, del);
+    listaEt.appendChild(fila);
+  });
   document.dispatchEvent(new CustomEvent('datos-actualizados', { detail: { ...DATOS } }));
+}
+
+/* Blanco o casi negro según el brillo del color de fondo, para que el texto de la etiqueta siempre se lea */
+function colorTextoSobre(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+  if (!m) return '#fff';
+  const n = parseInt(m[1], 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  return (r * 299 + g * 587 + b * 114) / 1000 > 150 ? '#0f172a' : '#fff';
+}
+/* HTML de una etiqueta (para tablas y detalles). El nombre se escapa. */
+function etiquetaHtml(et) {
+  if (!et) return '';
+  const esc = String(et.nombre).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const col = /^#[0-9a-f]{6}$/i.test(et.color || '') ? et.color : '#64748b';
+  return `<span class="etiqueta" style="background:${col};color:${colorTextoSobre(col)}">${esc}</span>`;
+}
+
+async function agregarEtiqueta() {
+  const nombreEl = document.getElementById('etiquetaNombre');
+  const nombre = nombreEl.value.trim().replace(/\s+/g, ' ');
+  const color = document.getElementById('etiquetaColor').value;
+  if (!nombre) { alert('Escribe el nombre de la etiqueta.'); return; }
+  if (DATOS.etiquetas.some(e => e.nombre.toLowerCase() === nombre.toLowerCase())) { alert('Ya existe una etiqueta con ese nombre.'); return; }
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  try { await refDatos().set({ etiquetas: [...DATOS.etiquetas, { id, nombre, color }] }, { merge: true }); nombreEl.value = ''; }
+  catch (err) { console.error(err); alert('No se pudo guardar la etiqueta.'); }
+}
+
+async function eliminarEtiqueta(et) {
+  if (!confirm(`¿Eliminar la etiqueta "${et.nombre}"? Los registros que ya la usan dejarán de mostrarla.`)) return;
+  try { await refDatos().set({ etiquetas: DATOS.etiquetas.filter(e => e.id !== et.id) }, { merge: true }); }
+  catch (err) { console.error(err); alert('No se pudo eliminar la etiqueta.'); }
 }
 
 function initEscuchaDatos() {
@@ -395,6 +450,7 @@ function initDatosUI() {
   document.getElementById('btnAgregarFlete').addEventListener('click', agregarFlete);
   document.getElementById('btnGuardarComision').addEventListener('click', guardarComision);
   document.getElementById('btnAgregarOrigen').addEventListener('click', agregarOrigen);
+  document.getElementById('btnAgregarEtiqueta').addEventListener('click', agregarEtiqueta);
 }
 
 /* ---------- Inicialización ---------- */

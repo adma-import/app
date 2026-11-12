@@ -11,3 +11,6 @@
 .ep-calc td:last-child { text-align: right; white-space: nowrap; padding-left: 12px; }
 .ep-resumen p { margin: 8px 0 0; font-size: .78rem; color: var(--text-muted, #475569); }
 @media (max-width: 480px) { .ep-trio { grid-template-columns: 1fr; } }
+
+/* Logo de envases del módulo EasyPack */
+.ep-logo { vertical-align: middle; margin-right: .5rem; color: var(--acento, #2563eb); }
