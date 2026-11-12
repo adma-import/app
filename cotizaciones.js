@@ -837,6 +837,7 @@ function cotPintarDetalle() {
     cotDetalleModo === 'oc' && cotTieneOrden(c) ? dato('Fecha de entrega en bodega', `<input type="date" data-oc-campo="fechaBodega" data-oc-id="${c.id}" value="${cotEsc(c.orden.fechaBodega || '')}" aria-label="Fecha de entrega en bodega">`) : '',
     cotDetalleModo === 'oc' && cotTieneOrden(c) ? dato('Fecha estimada de entrega del producto', `<input type="date" data-oc-campo="fechaEstimada" data-oc-id="${c.id}" value="${cotEsc(c.orden.fechaEstimada || '')}" aria-label="Fecha estimada de entrega del producto">`) : '',
     cotDetalleModo === 'oc' && cotTieneOrden(c) ? dato('Estado de los productos', `<select data-oc-campo="estadoId" data-oc-id="${c.id}" aria-label="Estado de los productos"><option value="">Sin estado</option>${((typeof DATOS !== 'undefined' && DATOS.etiquetas) || []).map(et => `<option value="${cotEsc(et.id)}"${et.id === c.orden.estadoId ? ' selected' : ''}>${cotEsc(et.nombre)}</option>`).join('')}</select> ${ocEtiqueta(c.orden.estadoId) ? etiquetaHtml(ocEtiqueta(c.orden.estadoId)) : ''}`) : '',
+    cotDetalleModo === 'oc' && cotTieneOrden(c) ? dato('Evidencia (PDF, JPG o PNG)', ocEvidenciaHtml(c)) : '',
     link && cotDetalleModo === 'cot' ? dato('Link', `<a href="${cotEsc(link)}" target="_blank" rel="noopener noreferrer">Ver link del producto</a>`) : ''
   ].join('');
 
@@ -1673,7 +1674,8 @@ const pgGpkTotal = c => pgSuma(pgGpkPagos(c), 'monto');
 const pgBytesUsados = c => (c.imagenes || []).join('').length + (c.imagenesReales || []).join('').length
   + (c.pagos || []).reduce((t, p) => t + (p.comprobante || '').length, 0)
   + pgGpkPagos(c).reduce((t, p) => t + (p.comprobante || '').length, 0)
-  + ((c.orden && c.orden.pagoProveedor && c.orden.pagoProveedor.comprobante) || '').length;
+  + ((c.orden && c.orden.pagoProveedor && c.orden.pagoProveedor.comprobante) || '').length
+  + ((c.orden && c.orden.evidencia && c.orden.evidencia.data) || '').length;
 const pgEsSuper = () => !!sesionActual && sesionActual.rol === APP_CONFIG.ROLES.SUPER;
 const pgCop = v => '$ ' + cotNum(v, 0) + ' COP';
 const pgSuma = (lista, campo) => lista.reduce((t, p) => t + (Number(p[campo]) || 0), 0);
@@ -2481,6 +2483,57 @@ const OC_ESTADOS = { sinpagar: 'Sin pagar', pagado: 'Pagado' };
 const ocPagoDe = g => g.items[0].orden.pagoProveedor || null;
 const ocEstadoPago = g => ocPagoDe(g) ? 'pagado' : 'sinpagar';
 const ocEtiqueta = id => (typeof DATOS !== 'undefined' && DATOS.etiquetas || []).find(e => e.id === id) || null;
+const OC_EVID_MAX_PDF = 350 * 1024;   // bytes; el archivo se guarda dentro del documento de Firestore (límite ~1 MB)
+function ocEvidenciaHtml(c) {
+  const ev = c.orden && c.orden.evidencia;
+  const hay = ev && ev.data;
+  return `${hay ? `<div class="oc-evid"><button type="button" class="cot-enlace" data-oc-evver="${c.id}">${cotEsc(ev.nombre || 'Ver evidencia')}</button>
+      <button type="button" class="cot-enlace cot-btn-peligro" data-oc-evquitar="${c.id}">Quitar</button></div>` : ''}
+    <input type="file" data-oc-evid="${c.id}" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" aria-label="${hay ? 'Reemplazar la evidencia' : 'Adjuntar evidencia'}">`;
+}
+
+async function ocSubirEvidencia(input) {
+  const c = cotLista.find(x => x.id === input.dataset.ocEvid);
+  const f = input.files[0];
+  input.value = '';
+  if (!c || !f) return;
+  const esPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+  const esImg = /^image\/(jpeg|png)$/.test(f.type);
+  if (!esPdf && !esImg) { alert('La evidencia debe ser un PDF, JPG o PNG.'); return; }
+  if (esPdf && f.size > OC_EVID_MAX_PDF) { alert('El PDF pesa demasiado (máximo 350 KB). Comprímelo o adjunta una imagen.'); return; }
+  let data;
+  try {
+    data = esImg ? await cotComprimir(f, 1400, 0.75)
+      : await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => no(r.error); r.readAsDataURL(f); });
+  } catch (err) { console.error(err); alert('No se pudo leer el archivo.'); return; }
+  const actual = ((c.orden.evidencia && c.orden.evidencia.data) || '').length;
+  if (pgBytesUsados(c) - actual + data.length > COT_MAX_CHARS_TOTAL) { alert('Este registro ya tiene muchas imágenes y no cabe más. Adjunta un archivo más liviano.'); return; }
+  try {
+    await cotRef().doc(c.id).update({ 'orden.evidencia': { nombre: f.name.slice(0, 80), tipo: esPdf ? 'pdf' : 'img', data, por: sesionActual ? sesionActual.nombre : '', fecha: new Date().toISOString().slice(0, 10) } });
+  } catch (err) { console.error(err); alert('No se pudo guardar la evidencia. Revisa tu conexión.'); }
+}
+
+async function ocVerEvidencia(id) {
+  const c = cotLista.find(x => x.id === id);
+  const ev = c && c.orden && c.orden.evidencia;
+  if (!ev || !/^data:(image\/(png|jpe?g)|application\/pdf);base64,[A-Za-z0-9+\/=]+$/.test(ev.data || '')) return;
+  const w = window.open('', '_blank');
+  if (!w) { alert('El navegador bloqueó la ventana. Permite las ventanas emergentes e inténtalo de nuevo.'); return; }
+  if (ev.data.startsWith('data:application/pdf')) {
+    const blob = await (await fetch(ev.data)).blob();
+    w.location.href = URL.createObjectURL(blob);
+  } else {
+    w.document.write(`<title>Evidencia</title><body style="margin:0;background:#222"><img src="${cotEsc(ev.data)}" style="max-width:100%;display:block;margin:auto">`);
+    w.document.close();
+  }
+}
+
+async function ocQuitarEvidencia(id) {
+  if (!confirm('¿Quitar la evidencia adjunta?')) return;
+  try { await cotRef().doc(id).update({ 'orden.evidencia': firebase.firestore.FieldValue.delete() }); }
+  catch (err) { console.error(err); alert('No se pudo quitar la evidencia.'); }
+}
+
 const ocIconoDup = '<svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
 const ocMontoTxt = p => p.moneda === 'RMB' ? '¥ ' + cotNum(p.monto, 2) : '$ ' + cotNum(p.monto, 2) + ' ' + (p.moneda || 'COP');
 
@@ -3068,7 +3121,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.closest('[data-dup-prueba]')) ocDupVistaPrevia();
     else if (e.target.closest('[data-dup-crear]')) ocDupCrear();
   });
+  document.getElementById('pan-cot').addEventListener('click', e => {
+    const v = e.target.closest('[data-oc-evver]'), q = e.target.closest('[data-oc-evquitar]');
+    if (v) ocVerEvidencia(v.dataset.ocEvver); else if (q) ocQuitarEvidencia(q.dataset.ocEvquitar);
+  });
   document.getElementById('pan-cot').addEventListener('change', async e => {
+    const ev = e.target.closest('[data-oc-evid]');
+    if (ev) { ocSubirEvidencia(ev); return; }
     const el = e.target.closest('[data-oc-campo]');
     if (!el) return;
     try { await cotRef().doc(el.dataset.ocId).update({ ['orden.' + el.dataset.ocCampo]: el.value || '' }); }
