@@ -627,7 +627,7 @@ async function epGenerarPDF(ids) {
   const COLS = [{ x: 89, w: 205 }, { x: 294, w: 105 }, { x: 399, w: 95 }];     // Producto | Unidad de empaque | Precio
   lista.forEach(c => {
     const k = c.costosEp;
-    const precioTxt = `$${Math.round(k.precioUnidad).toLocaleString('es-CO')} pesos unidad`;
+    const precioTxt = `$${epNum(k.precioUnidad)} pesos unidad`;
     const cab = ['Producto', 'Unidad de empaque', `Precio para ${cotCantidadTxt(c)} u.`];
     doc.setFontSize(10.5);
     doc.setFont('helvetica', 'bold');
