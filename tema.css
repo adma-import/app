@@ -269,3 +269,23 @@ th { font-family: var(--fuente-titulo); font-weight: 800; }
 .pan .cot-tabla-card { overflow-x: auto; }
 .cot-btn-tabla { text-decoration: none; }
 .pan-tabla { min-width: 0 !important; } .pan-tabla td { white-space: normal; overflow-wrap: anywhere; } .pan-tabla td.cot-num { white-space: nowrap; }
+
+/* ---------- Campos editables dentro de los detalles (fechas y estado de los productos) y formulario de duplicar ---------- */
+.pan-dato input, .pan-dato select, .login-campo textarea, .login-campo input[type="date"] {
+  width: 100%; min-height: 44px; padding: 0 14px; font: inherit; font-size: var(--fs-base, 1rem); font-weight: 500; color: var(--tinta, #1a1a1a);
+  border: 1.5px solid #d3d3cb; border-radius: 10px; background: #fff;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.pan-dato select { padding-right: 36px; cursor: pointer; }
+.login-campo textarea { padding: 10px 14px; line-height: 1.4; resize: vertical; }
+.pan-dato input:hover, .pan-dato select:hover, .login-campo textarea:hover { border-color: #a9a9a0; }
+.pan-dato input:focus, .pan-dato select:focus, .login-campo textarea:focus {
+  border-color: var(--tinta, #1a1a1a); outline: none; box-shadow: 0 0 0 4px var(--amarillo, #fdee14);
+}
+.pan-dato dd:has(select) { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.pan-dato dd:has(select) select { flex: 1 1 180px; width: auto; }
+.pan-dato .etiqueta { white-space: nowrap; }
+input[type="color"] { min-height: 44px; padding: 3px; border: 1.5px solid #d3d3cb; border-radius: 10px; background: #fff; cursor: pointer; }
+.oc-item-par { padding: 14px; border: 1px solid var(--border, #e2e8f0); border-radius: 12px; background: #fafaf7; }
+.oc-item-par > strong { font-family: var(--fuente-titulo); font-size: .9rem; }
+.oc-dup-item { border-left: 4px solid var(--amarillo, #fdee14); }
