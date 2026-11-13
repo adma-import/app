@@ -218,17 +218,9 @@ function epPintar() {
     const k = c.costosEp;
     const precio = k && cotOk(k.precioUnidad) ? `${epCop(k.precioUnidad)} <small>(${EP_MODALIDAD[k.modalidad] || ''})</small>` : '—';
     const ver = `<button type="button" class="cot-btn-tabla" data-ep-ver="${c.id}" title="Ver el detalle de la cotización" aria-label="Ver la cotización ${c.consecutivo}">${epIco('ver')}<span>Ver</span></button>`;
-    const acc = ver + (est === 'anulada'
-      ? `<button type="button" class="cot-btn-tabla" data-ep-copia="${c.id}" title="Crear una copia con el siguiente consecutivo">${epIco('enviar')}<span>Crear copia</span></button>`
-      : est === 'finalizada'
-      ? `<button type="button" class="cot-btn-tabla" data-ep-pdf="${c.id}" title="Descargar la cotización en PDF">${epIco('pdf')}<span>PDF</span></button>`
-      : [
-        `<button type="button" class="cot-btn-tabla" data-ep-costos="${c.id}" title="${k ? 'Editar costos' : 'Llenar los costos'}">${epIco('excel')}<span>${k ? 'Editar costos' : 'Costos'}</span></button>`,
-        k ? `<button type="button" class="cot-btn-tabla" data-ep-pdf="${c.id}" title="Descargar la cotización en PDF">${epIco('pdf')}<span>PDF</span></button>` : '',
-        k ? `<button type="button" class="cot-btn-tabla cot-btn-modulo" data-ep-finalizar="${c.id}" title="Pasar a Compras Finalizadas">${epIco('enviar')}<span>Compra finalizada</span></button>` : '',
-        `<button type="button" class="cot-btn-tabla cot-btn-ico" data-ep-editar="${c.id}" title="Editar datos" aria-label="Editar datos de la cotización ${c.consecutivo}">${epIco('editar')}</button>`,
-        `<button type="button" class="cot-btn-tabla cot-btn-ico cot-btn-peligro" data-ep-anular="${c.id}" title="Anular (conserva el consecutivo)" aria-label="Anular la cotización ${c.consecutivo}">${epIco('borrar')}</button>`
-      ].join(''));
+    // En la tabla solo Ver y Anular; costos, PDF, compra finalizada, editar y copia están en el detalle
+    const acc = ver + (est === 'anulada' || est === 'finalizada' ? ''
+      : `<button type="button" class="cot-btn-tabla cot-btn-ico cot-btn-peligro" data-ep-anular="${c.id}" title="Anular (conserva el consecutivo)" aria-label="Anular la cotización ${c.consecutivo}">${epIco('borrar')}</button>`);
     return `<tr class="cot-fila${est === 'anulada' ? ' ep-anulada' : ''}" data-ep-ver="${c.id}" tabindex="0" title="Ver detalle">
       <td class="cot-col-sel"><input type="checkbox" data-ep-sel="${c.id}"${epSel.has(c.id) ? ' checked' : ''}${k && est !== 'anulada' ? '' : ' disabled'} aria-label="Seleccionar la cotización ${c.consecutivo}"></td>
       <td class="ep-col-no"><strong>${cotEsc(c.consecutivo)}</strong></td>
