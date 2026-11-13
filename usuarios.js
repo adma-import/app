@@ -75,8 +75,11 @@ function inicialesUsuario(nombre) {
     .map(p => p[0].toUpperCase()).join('') || '--';
 }
 
-function correoInternoDesdeUsuario(usuario) {
-  return `${usuario}@${APP_CONFIG.DOMINIO_CORREO_INTERNO}`;
+/* intento 0: usuario@dominio. Si ese correo ya existe en Authentication (porque el usuario se eliminó antes y la cuenta técnica
+   no se puede borrar desde el cliente), se prueba con usuario-r1@dominio, usuario-r2@dominio… El inicio de sesión no depende
+   del correo: busca el que quedó guardado en usuario_email/{usuario}. */
+function correoInternoDesdeUsuario(usuario, intento = 0) {
+  return `${usuario}${intento ? '-r' + intento : ''}@${APP_CONFIG.DOMINIO_CORREO_INTERNO}`;
 }
 
 function mostrarErrorModal(mensaje) {
@@ -321,13 +324,18 @@ async function crearUsuarioNuevo({ nombre, rol, modulos }) {
     throw { code: 'validacion/usuario-existe', message: 'Ese nombre de usuario ya está en uso.' };
   }
 
-  const email = correoInternoDesdeUsuario(usuario);
   const appSecundaria = obtenerAppSecundaria();
   const authSecundaria = appSecundaria.auth();
 
   // 2. Crear la cuenta en Firebase Authentication (en la app secundaria,
   //    así no se cierra la sesión del administrador en la app principal).
-  const credencial = await authSecundaria.createUserWithEmailAndPassword(email, password);
+  let credencial = null, email = '';
+  for (let intento = 0; intento < 20 && !credencial; intento++) {
+    email = correoInternoDesdeUsuario(usuario, intento);
+    try { credencial = await authSecundaria.createUserWithEmailAndPassword(email, password); }
+    catch (err) { if (err.code !== 'auth/email-already-in-use') throw err; }   // cuenta técnica de un usuario eliminado: se prueba otro correo
+  }
+  if (!credencial) throw { code: 'validacion/usuario-existe', message: 'No se pudo crear el usuario. Prueba con otro nombre de usuario.' };
   const uid = credencial.user.uid;
 
   // 3. Crear los documentos en Firestore. Si algo falla aquí, deshacemos
