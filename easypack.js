@@ -334,8 +334,8 @@ function epPintarDetalle() {
       l('CBM por caja', k.cbmCaja, n4), l('Peso por caja (kg)', k.pesoCaja, n3), ['Tipo de tarifa', k.tipo === 'ESPECIAL' ? 'Especial' : 'Normal']]],
     ['Precios', [l('Precio del producto (USD)', k.precioUsd, n2), l('Gasto de emergencia (USD)', k.gasto, n2), l('Dólar a pesos (TRM)', k.usdCop, n2),
       l('Flete marítimo (COP por m³)', k.fleteBarco, epCop), l('Costo del producto (COP)', k.costoProdCop, epCop), l('IVA por unidad', k.iva, epCop), l('Arancel por unidad', k.arancel, epCop),
-      l('Costo de importación barco por unidad (producto + flete)', k.costoImportBarco, epCop), l('Precio de la cotización por unidad', k.precioUnidad, epCop),
-      l('Precio marítimo por unidad', k.precioMaritimo, epCop), l('Precio aéreo por unidad', k.precioAereo, epCop)]]
+      l('Costo de importación barco por unidad (producto + flete)', k.costoImportBarco, epCop), l('Costo de la cotización por unidad', k.precioUnidad, epCop),
+      l('Costo marítimo por unidad', k.precioMaritimo, epCop), l('Costo aéreo por unidad', k.precioAereo, epCop)]]
   ].map(([t, ls]) => [t, ls.filter(Boolean)]) : [];
   const tablas = grupos.map(([t, ls]) => ls.length ? `
     <div class="pan-card"><h3 class="pan-sub">${cotEsc(t)}</h3>
@@ -545,8 +545,8 @@ function epActualizarResumen() {
     ${fila('IVA (informativo)', epCop(r.iva))}
     ${fila('Arancel (informativo)', epCop(r.arancel))}
     ${fila('Costo de importación barco (producto + flete)', epCop(r.costoImportBarco))}
-    ${fila('<strong>Precio marítimo por unidad (nacionalizado)</strong>', '<strong>' + epCop(r.precioMaritimo) + '</strong>')}
-    ${fila('<strong>Precio aéreo por unidad (producto + flete)</strong>', '<strong>' + (r.precioAereo == null ? 'SIN PESO' : epCop(r.precioAereo)) + '</strong>')}
+    ${fila('<strong>Costo marítimo por unidad (nacionalizado)</strong>', '<strong>' + epCop(r.precioMaritimo) + '</strong>')}
+    ${fila('<strong>Costo aéreo por unidad (producto + flete)</strong>', '<strong>' + (r.precioAereo == null ? 'SIN PESO' : epCop(r.precioAereo)) + '</strong>')}
   </tbody></table>
   <p>El precio del PDF es el de la modalidad elegida, sin impuestos.</p>`;
 }
