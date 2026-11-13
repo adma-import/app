@@ -45,7 +45,7 @@ const epSel = new Set();
 /* ---------- Utilidades ---------- */
 /* Sin redondeo: se muestran todos los decimales del valor (hasta 10, solo para quitar el ruido de coma flotante) */
 const epNum = (v, dec = 10) => Number(v).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: dec });
-const epCop = v => '$ ' + epNum(v);
+const epCop = v => '$ ' + epNum(v, 2);   // valores en pesos: máximo 2 decimales, sin rellenar con ceros
 const epEstadoDe = c => c.anulada ? 'anulada' : (c.modulo === 'easypack' && c.estado === 'finalizada' ? 'finalizada' : (c.costosEp ? 'cotizada' : 'pendiente'));
 const EP_ESTADOS = { pendiente: 'Pendiente', cotizada: 'Cotizada', finalizada: 'Finalizada', anulada: 'Anulada' };
 const epIco = n => `<svg class="cot-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS[n]}</svg>`;
@@ -538,7 +538,7 @@ function epActualizarResumen() {
     ${fila('Dólar a pesos', epCop(trm))}
     ${fila('CBM por caja', epNum(r.cbmCaja))}
     ${fila('Peso por caja', epNum(r.pesoCaja) + ' kg')}
-    ${fila('Precio China (USD, informativo)', epNum(r.precioChinaUsd))}
+    ${fila('Precio China (USD, informativo)', epNum(r.precioChinaUsd, 2))}
     ${fila('Costo del producto (COP, unidad)', epCop(r.costoProdCop))}
     ${fila('Flete marítimo (COP, unidad)', epCop(r.fleteMarUnidad))}
     ${fila('Flete aéreo (COP, unidad)', r.fleteAereoUnidad == null ? 'SIN PESO' : epCop(r.fleteAereoUnidad))}
@@ -655,7 +655,7 @@ async function epGenerarPDF(ids) {
   const COLS = [{ x: 89, w: 205 }, { x: 294, w: 105 }, { x: 399, w: 95 }];     // Producto | Unidad de empaque | Precio
   lista.forEach(c => {
     const k = c.costosEp;
-    const precioTxt = `$${epNum(k.precioUnidad)} pesos unidad`;
+    const precioTxt = `$${epNum(k.precioUnidad, 2)} pesos unidad`;
     const cab = ['Producto', 'Unidad de empaque', `Precio para ${cotCantidadTxt(c)} u.`];
     doc.setFontSize(10.5);
     doc.setFont('helvetica', 'bold');
