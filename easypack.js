@@ -236,7 +236,7 @@ function epPintar() {
   }).join('');
 
   grid.innerHTML = `<div class="cot-tabla-card"><table class="cot-tabla">
-    <thead><tr><th class="cot-col-sel"><span class="sr-only">Seleccionar</span></th><th>Cliente</th><th>Producto</th><th class="cot-num">Cantidad</th><th>Fecha</th><th class="cot-num">Precio unidad</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
+    <thead><tr><th class="cot-col-sel"><span class="sr-only">Seleccionar</span></th><th>Cliente</th><th>Producto</th><th class="cot-num">Cantidad</th><th>Fecha</th><th class="cot-num">Costo unidad</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
     <tbody>${filas}</tbody></table></div>${epControlesPagina(lista.length, ini, pagina.length, paginas)}`;
 }
 
