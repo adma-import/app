@@ -751,7 +751,7 @@ function cotPintar() {
     const est = cotEstadoDe(c);
     const esEP = cotEsEP(c);
     const producto = esEP ? (c.nombreProducto || c.descripcion) : c.descripcion;
-    const sel = esEP ? '' : `<input type="checkbox" class="cot-sel" data-cot-sel="${c.id}"${cotSeleccion.has(c.id) ? ' checked' : ''} aria-label="Seleccionar la cotización de ${cotEsc(c.cliente)}">`;
+    const sel = `<input type="checkbox" class="cot-sel" data-cot-sel="${c.id}"${cotSeleccion.has(c.id) ? ' checked' : ''} aria-label="Seleccionar la cotización de ${cotEsc(c.cliente)}">`;
     return `<tr class="cot-fila${est === 'anulada' ? ' ep-anulada' : ''}" data-cot-toggle="${c.id}" tabindex="0" title="Ver detalle">
       <td class="cot-col-sel">${sel}</td>
       <td class="cot-col-cliente"><strong>${cotEsc(c.cliente)}</strong></td>
@@ -1244,15 +1244,17 @@ function cotActualizarAcciones() {
   const n = sel.length;
   document.getElementById('cotSelTexto').textContent = n ? `${n} seleccionada${n > 1 ? 's' : ''}` : '';
   const clientes = new Set(sel.map(c => cotNorm(c.cliente).trim()));
-  const todasConCostos = sel.every(c => c.costos);
+  const tieneCostos = c => c.costos || (cotEsEP(c) && c.costosEp && !c.anulada);   // EasyPack guarda sus costos en costosEp
+  const todasConCostos = sel.every(tieneCostos);
+  const mezcla = sel.some(cotEsEP) && sel.some(c => !cotEsEP(c));
   const ok = {
     excel: n > 0 && sel.every(c => cotTipoSel(c) === 'excel'),
-    pdf: n > 0 && todasConCostos && clientes.size === 1,
+    pdf: n > 0 && todasConCostos && clientes.size === 1 && !mezcla,
     orden: n > 0 && sel.every(c => cotTipoSel(c) === 'orden')
   };
   const motivo = {
     excel: 'Solo para cotizaciones pendientes',
-    pdf: !todasConCostos ? 'Todas deben tener los costos llenos' : 'Deben ser del mismo cliente',
+    pdf: mezcla ? 'No se pueden mezclar cotizaciones de EasyPack con las de otras empresas' : !todasConCostos ? 'Todas deben tener los costos llenos' : 'Deben ser del mismo cliente',
     orden: 'Solo para cotizaciones finalizadas sin orden de compra'
   };
   [['cotBtnExcelSel', 'excel', `A cotizar - Generar Excel (${n})`],
@@ -2318,7 +2320,7 @@ function cotSeleccionar(id, marcar) {
 }
 function cotSeleccionarVisibles() {
   cotSeleccion.clear();
-  cotPaginar(cotFiltradas()).filas.filter(c => !cotEsEP(c)).forEach(c => cotSeleccion.add(c.id));
+  cotPaginar(cotFiltradas()).filas.forEach(c => cotSeleccion.add(c.id));
   cotPintar();
 }
 
@@ -3166,7 +3168,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('cotBtnSelVisibles').addEventListener('click', () => cotSeleccionarVisibles());
   document.getElementById('cotBtnPdfSel').addEventListener('click',
-    () => cotGenerarPDFCotizacion(cotLista.filter(c => cotSeleccion.has(c.id)).reverse()));
+    () => {
+      const sel = cotLista.filter(c => cotSeleccion.has(c.id));
+      if (sel.length && sel.every(cotEsEP) && typeof epGenerarPDF === 'function') epGenerarPDF(sel.map(c => c.id));   // EasyPack tiene su propia plantilla de PDF
+      else cotGenerarPDFCotizacion(sel.reverse());
+    });
   document.getElementById('cotBtnOrdenSel').addEventListener('click', () => cotGenerarOrden([...cotSeleccion]));
   document.getElementById('cotBtnOrdenPrueba').addEventListener('click', () => cotGenerarOrdenPrueba([...cotSeleccion]));
   document.getElementById('cotBtnLimpiarSel').addEventListener('click', () => { cotSeleccion.clear(); cotPintar(); });

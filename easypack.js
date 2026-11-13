@@ -89,7 +89,7 @@ function epConstruirUI() {
       <div class="cot-cabecera"><h2 class="cot-titulo">${EP_LOGO}EasyPack · Cotizaciones</h2>
         <button type="button" class="btn cot-btn-crear" id="epBtnNueva" title="Crear una cotización de EasyPack"><svg class="cot-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COT_ICONOS.crear}</svg><span>Crear cotización</span></button></div>
       <div class="cot-filtros">
-        <input type="search" id="epBuscar" placeholder="Buscar por No., cliente, empresa, NIT, producto…" aria-label="Buscar cotizaciones de EasyPack" autocomplete="off">
+        <input type="search" id="epBuscar" placeholder="Buscar por cliente, empresa, NIT, producto…" aria-label="Buscar cotizaciones de EasyPack" autocomplete="off">
         <label class="cot-filtro"><span>Filtrar por estado</span><select id="epFiltroEstado" aria-label="Filtrar por estado"><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="cotizada">Cotizada</option><option value="finalizada">Finalizada</option><option value="anulada">Anulada</option></select></label>
       </div>
       <p id="epConteo" class="cot-conteo" aria-live="polite"></p>
@@ -223,7 +223,6 @@ function epPintar() {
       : `<button type="button" class="cot-btn-tabla cot-btn-ico cot-btn-peligro" data-ep-anular="${c.id}" title="Anular (conserva el consecutivo)" aria-label="Anular la cotización ${c.consecutivo}">${epIco('borrar')}</button>`);
     return `<tr class="cot-fila${est === 'anulada' ? ' ep-anulada' : ''}" data-ep-ver="${c.id}" tabindex="0" title="Ver detalle">
       <td class="cot-col-sel"><input type="checkbox" data-ep-sel="${c.id}"${epSel.has(c.id) ? ' checked' : ''}${k && est !== 'anulada' ? '' : ' disabled'} aria-label="Seleccionar la cotización ${c.consecutivo}"></td>
-      <td class="ep-col-no"><strong>${cotEsc(c.consecutivo)}</strong></td>
       <td class="cot-col-cliente"><strong>${cotEsc(c.cliente)}</strong></td>
       <td class="cot-col-prod"><span class="cot-prod-txt">${cotEsc(c.nombreProducto)}${c.nombreProductoEn ? `<br><small>${cotEsc(c.nombreProductoEn)}</small>` : ''}</span></td>
       <td class="cot-num">${cotCantidadTxt(c)}</td>
@@ -235,7 +234,7 @@ function epPintar() {
   }).join('');
 
   grid.innerHTML = `<div class="cot-tabla-card"><table class="cot-tabla">
-    <thead><tr><th class="cot-col-sel"><span class="sr-only">Seleccionar</span></th><th>No.</th><th>Cliente</th><th>Producto</th><th class="cot-num">Cantidad</th><th>Fecha</th><th class="cot-num">Precio unidad</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
+    <thead><tr><th class="cot-col-sel"><span class="sr-only">Seleccionar</span></th><th>Cliente</th><th>Producto</th><th class="cot-num">Cantidad</th><th>Fecha</th><th class="cot-num">Precio unidad</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
     <tbody>${filas}</tbody></table></div>${epControlesPagina(lista.length, ini, pagina.length, paginas)}`;
 }
 
