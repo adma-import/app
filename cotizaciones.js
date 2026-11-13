@@ -757,13 +757,14 @@ function cotPintar() {
       <td class="cot-col-cliente"><strong>${cotEsc(c.cliente)}</strong></td>
       <td class="cot-col-empresa"><span class="cot-empresa">${cotEsc(c.origen || '—')}</span></td>
       <td class="cot-col-prod"><span class="cot-prod-txt">${cotEsc(producto)}</span></td>
+      <td class="cot-col-fecha">${cotEsc(ocFechaTxt(c.creadoEn) || '—')}</td>
       <td class="cot-col-estado"><span class="cot-estado cot-e-${est}">${COT_ESTADOS[est]}</span>${cotStockTag(cotStockTipo(c))}${cotTieneOrden(c) ? `<span class="cot-oc" title="Orden de compra generada">OC ${cotEsc(c.orden.booth)}</span>` : ''}</td>
       <td class="cot-col-acc"><div class="cot-acciones-fila"><button type="button" class="cot-btn-tabla" data-cot-ver="${c.id}" title="Ver el detalle de la cotización" aria-label="Ver la cotización de ${cotEsc(c.cliente)}">${ico('ver')}<span>Ver</span></button></div></td>
     </tr>`;
   }).join('');
 
   grid.innerHTML = `<div class="cot-tabla-card"><table class="cot-tabla">
-    <thead><tr><th class="cot-col-sel"><span class="sr-only">Seleccionar</span></th><th>Cliente</th><th>Empresa</th><th>Producto</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
+    <thead><tr><th class="cot-col-sel"><span class="sr-only">Seleccionar</span></th><th>Cliente</th><th>Empresa</th><th>Producto</th><th>Fecha</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
     <tbody>${filas}</tbody></table></div>${cotControlesPagina(lista.length, pag)}`;
 }
 
@@ -828,7 +829,7 @@ function cotPintarDetalle() {
     dato('Cliente de', cotEsc(c.origen || '')),
     dato('Comercial', cotEsc(c.comercial || '')),
     dato('Cantidad', cotCantidadTxt(c)),
-    dato('Fecha de creación', c.creadoEn && c.creadoEn.toDate ? cotEsc(ocFechaTxt(c.creadoEn)) : ''),
+    dato('Fecha de creación', cotEsc(ocFechaTxt(c.creadoEn) || '—')),
     dato('Bróker', k && k.broker ? cotEsc(k.broker) : ''),
     dato('Tipo', cotEsStock(c) ? `${cotStockTipo(c)} (sin aumento ni comisión)` : ''),
     dato('Enviada a', c.modulo ? cotEsc(cotNombreModulo(c.modulo)) : ''),
@@ -1849,6 +1850,7 @@ function pgPintarDetalle() {
   document.getElementById('pgDetalleCuerpo').innerHTML = `
     ${sinCliente ? '' : `<p><span class="cot-estado pg-${R.estado}">${PG_ESTADOS[R.estado]}</span></p>`}
     <p class="cot-dato"><strong>Cliente:</strong> ${cotEsc(c.cliente)}</p>
+    <p class="cot-dato"><strong>Fecha de creación:</strong> ${cotEsc(ocFechaTxt(c.creadoEn) || '—')}</p>
     ${fotos.length ? `<div class="cot-miniaturas">${fotos.map((s, i) => `<img src="${cotEsc(s)}" alt="Foto ${i + 1} de ${cotEsc(c.cliente)}">`).join('')}</div>` : ''}
     <p class="cot-dato"><strong>Cantidad cotizada:</strong> ${cotNum(R.unidades, 0)}</p>
     ${cotObsHtml(c, 'data-pg-obs')}

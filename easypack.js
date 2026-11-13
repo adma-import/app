@@ -236,6 +236,7 @@ function epPintar() {
       <td class="cot-col-cliente">${foto ? `<img class="pg-thumb" src="${cotEsc(foto)}" alt="">` : ''}<strong>${cotEsc(c.cliente)}</strong>${c.empresa ? `<br><small>${cotEsc(c.empresa)}${c.nit ? ' · NIT ' + cotEsc(c.nit) : ''}</small>` : ''}</td>
       <td class="cot-col-prod"><span class="cot-prod-txt">${cotEsc(c.nombreProducto)}${c.nombreProductoEn ? `<br><small>${cotEsc(c.nombreProductoEn)}</small>` : ''}</span></td>
       <td class="cot-num">${cotCantidadTxt(c)}</td>
+      <td>${cotEsc(ocFechaTxt(c.creadoEn) || '—')}</td>
       <td class="cot-num">${precio}</td>
       <td class="cot-col-estado"><span class="cot-estado cot-e-${est}">${EP_ESTADOS[est]}</span></td>
       <td class="cot-col-acc"><div class="cot-acciones-fila">${acc}</div></td>
@@ -243,7 +244,7 @@ function epPintar() {
   }).join('');
 
   grid.innerHTML = `<div class="cot-tabla-card"><table class="cot-tabla">
-    <thead><tr><th class="cot-col-sel"><span class="sr-only">Seleccionar</span></th><th>No.</th><th>Cliente</th><th>Producto</th><th class="cot-num">Cantidad</th><th class="cot-num">Precio unidad</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
+    <thead><tr><th class="cot-col-sel"><span class="sr-only">Seleccionar</span></th><th>No.</th><th>Cliente</th><th>Producto</th><th class="cot-num">Cantidad</th><th>Fecha</th><th class="cot-num">Precio unidad</th><th>Estado</th><th class="cot-col-acc">Acciones</th></tr></thead>
     <tbody>${filas}</tbody></table></div>${epControlesPagina(lista.length, ini, pagina.length, paginas)}`;
 }
 
@@ -285,7 +286,7 @@ function epPintarDetalle() {
     dato('NIT', cotEsc(c.nit || '')),
     dato('Cliente de', cotEsc(c.origen || EP_ORIGEN)),
     dato('Cantidad', cotCantidadTxt(c)),
-    dato('Fecha de creación', c.creadoEn && c.creadoEn.toDate ? cotEsc(ocFechaTxt(c.creadoEn)) : ''),
+    dato('Fecha de creación', cotEsc(ocFechaTxt(c.creadoEn) || '—')),
     dato('Creada por', cotEsc(c.creadoPor || '')),
     dato('Modalidad', k ? cotEsc(EP_MODALIDAD[k.modalidad] || '') : ''),
     dato('Stock', k ? (k.stock ? 'Hay stock disponible' : 'Sin stock') : ''),
