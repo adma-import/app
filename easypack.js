@@ -68,15 +68,16 @@ function epCalcular(k, trm) {
   const costoProdUsd = N * EP_K.FACTOR_COSTO;                                // U
   const costoProdCop = costoProdUsd * trm;                                   // V
   const fleteMarUnidad = qty ? (k.fleteBarco * cbmCaja) / qty : 0;           // T
-  const precioMaritimo = costoProdCop + fleteMarUnidad;                      // W
+  const costoImportBarco = costoProdCop + fleteMarUnidad;                    // W (producto + flete, antes de impuestos)
   const fleteAereoCajaUsd = (EP_K.AEREO_USD_KG[k.tipo] || EP_K.AEREO_USD_KG.NORMAL) * pesoCaja;   // X
   const fleteAereoCajaCop = fleteAereoCajaUsd * trm;                         // Y
   const fleteAereoUnidad = qty && fleteAereoCajaCop > 0 ? fleteAereoCajaCop / qty : null;   // Z
   const precioAereo = fleteAereoUnidad == null ? null : fleteAereoUnidad + costoProdCop;    // AB
   const iva = k.precioUsd * trm * EP_K.BASE_IMPUESTOS * EP_K.IVA;            // AC
   const arancel = k.precioUsd * trm * EP_K.BASE_IMPUESTOS * EP_K.ARANCEL;    // AE
+  const precioMaritimo = costoImportBarco - iva + arancel;                   // AF: COSTO APROX NACIONALIZADO BARCO (es el precio marítimo)
   return { cbmCaja, pesoCaja, precioChinaUsd, costoProdUsd, costoProdCop, fleteMarUnidad, precioMaritimo,
-           fleteAereoUnidad, precioAereo, iva, arancel, nacionalizado: precioMaritimo - iva + arancel };   // AF = W - AC + AE
+           fleteAereoUnidad, precioAereo, iva, arancel, costoImportBarco, nacionalizado: precioMaritimo };
 }
 const epPrecioUnidad = (r, modalidad) => modalidad === 'aerea' ? r.precioAereo : r.precioMaritimo;
 
@@ -96,6 +97,7 @@ function epConstruirUI() {
       <div class="cot-acciones">
         <button type="button" class="btn btn-chico" id="epBtnPdfSel" hidden></button>
         <button type="button" class="cot-enlace" id="epBtnLimpiarSel" hidden>Quitar selección</button>
+        <button type="button" class="btn btn-chico secundario" id="epBtnRecalcular" hidden title="Recalcula los costos de todas las cotizaciones con las fórmulas actuales (solo Super usuario)">Recalcular costos</button>
       </div></div>
     <div id="epGrid" class="cot-tabla-wrap" aria-live="polite"><p class="lista-vacia">Cargando cotizaciones…</p></div>`;
 
@@ -238,6 +240,42 @@ function epPintar() {
     <tbody>${filas}</tbody></table></div>${epControlesPagina(lista.length, ini, pagina.length, paginas)}`;
 }
 
+/* Recalcula costosEp de todas las cotizaciones con las fórmulas actuales (con las mismas entradas y el dólar que ya tenían guardados). Solo Super usuario. */
+async function epRecalcularTodas() {
+  if (typeof pgEsSuper !== 'function' || !pgEsSuper()) { alert('Solo el Super usuario puede recalcular los costos.'); return; }
+  const trmActual = typeof TASAS !== 'undefined' ? TASAS.usdCop : null;
+  const plan = [], omitidas = [];
+  epLista.filter(c => c.costosEp).forEach(c => {
+    const k = c.costosEp;
+    const pesoCaja = k.pesoCaja > 0 ? k.pesoCaja : (k.pesoUnit > 0 && k.qtyCaja > 0 ? (k.pesoUnit * k.qtyCaja) / 1000 : 0);
+    const trm = k.usdCop > 0 ? k.usdCop : trmActual;
+    const entrada = { qtyCaja: k.qtyCaja, alto: k.alto, ancho: k.ancho, largo: k.largo, pesoCaja, precioUsd: k.precioUsd, tipo: k.tipo, gasto: k.gasto || 0, fleteBarco: k.fleteBarco };
+    if (!(trm > 0) || ![entrada.qtyCaja, entrada.alto, entrada.ancho, entrada.largo, entrada.precioUsd, entrada.fleteBarco].every(x => x >= 0) || !(entrada.qtyCaja > 0)) { omitidas.push(c); return; }
+    const r = epCalcular(entrada, trm);
+    const precioUnidad = epPrecioUnidad(r, k.modalidad);
+    if (precioUnidad == null) { omitidas.push(c); return; }
+    const nuevo = { ...k, ...r, pesoCaja, precioUnidad, usdCop: trm, recalculadoEn: new Date().toISOString().slice(0, 10) };
+    delete nuevo.pesoUnit;
+    Object.keys(nuevo).forEach(key => { if (typeof nuevo[key] === 'number' && !Number.isFinite(nuevo[key])) nuevo[key] = null; });
+    plan.push({ c, nuevo, cambia: Math.abs((k.precioUnidad || 0) - precioUnidad) > 1e-9 });
+  });
+  if (!plan.length) { alert('No hay cotizaciones de EasyPack con costos para recalcular.'); return; }
+  const cambian = plan.filter(p => p.cambia).length;
+  if (!confirm(`Se recalcularán los costos de ${plan.length} cotización(es) de EasyPack con las fórmulas actuales (el precio por unidad cambiará en ${cambian}).` +
+    (omitidas.length ? `\n\nSe omiten ${omitidas.length} por datos incompletos (por ejemplo, aéreas sin peso).` : '') +
+    '\n\nLos PDF que ya enviaste no cambian, pero los nuevos saldrán con los valores recalculados.\n\n¿Continuar?')) return;
+  const btn = document.getElementById('epBtnRecalcular'); btn.disabled = true;
+  try {
+    for (let i = 0; i < plan.length; i += 400) {
+      const batch = db.batch();
+      plan.slice(i, i + 400).forEach(p => batch.update(cotRef().doc(p.c.id), { costosEp: p.nuevo }));
+      await batch.commit();
+    }
+    alert(`Listo: se recalcularon ${plan.length} cotizaciones.` + (omitidas.length ? ` Omitidas: ${omitidas.map(c => c.consecutivo + ' (' + c.cliente + ')').join(', ')}.` : ''));
+  } catch (err) { console.error(err); alert('No se pudo recalcular. Revisa tu conexión y las reglas de Firestore.'); }
+  finally { btn.disabled = false; }
+}
+
 /* ---------- Pantalla de detalle (igual que la de Groupack, con los datos propios de EasyPack) ---------- */
 let epDetalleId = null;
 function epAbrirDetalle(id) {
@@ -296,7 +334,7 @@ function epPintarDetalle() {
       l('CBM por caja', k.cbmCaja, n4), l('Peso por caja (kg)', k.pesoCaja, n3), ['Tipo de tarifa', k.tipo === 'ESPECIAL' ? 'Especial' : 'Normal']]],
     ['Precios', [l('Precio del producto (USD)', k.precioUsd, n2), l('Gasto de emergencia (USD)', k.gasto, n2), l('Dólar a pesos (TRM)', k.usdCop, n2),
       l('Flete marítimo (COP por m³)', k.fleteBarco, epCop), l('Costo del producto (COP)', k.costoProdCop, epCop), l('IVA por unidad', k.iva, epCop), l('Arancel por unidad', k.arancel, epCop),
-      l('Nacionalizado por unidad', k.nacionalizado, epCop), l('Precio de la cotización por unidad', k.precioUnidad, epCop),
+      l('Costo de importación barco por unidad (producto + flete)', k.costoImportBarco, epCop), l('Precio de la cotización por unidad', k.precioUnidad, epCop),
       l('Precio marítimo por unidad', k.precioMaritimo, epCop), l('Precio aéreo por unidad', k.precioAereo, epCop)]]
   ].map(([t, ls]) => [t, ls.filter(Boolean)]) : [];
   const tablas = grupos.map(([t, ls]) => ls.length ? `
@@ -320,6 +358,7 @@ function epActualizarAcciones() {
   const b = document.getElementById('epBtnPdfSel');
   b.hidden = !n; b.textContent = `Cotización PDF (${n})`;
   document.getElementById('epBtnLimpiarSel').hidden = !n;
+  document.getElementById('epBtnRecalcular').hidden = !(typeof pgEsSuper === 'function' && pgEsSuper());
 }
 
 /* ---------- Crear / editar datos ---------- */
@@ -505,8 +544,8 @@ function epActualizarResumen() {
     ${fila('Flete aéreo (COP, unidad)', r.fleteAereoUnidad == null ? 'SIN PESO' : epCop(r.fleteAereoUnidad))}
     ${fila('IVA (informativo)', epCop(r.iva))}
     ${fila('Arancel (informativo)', epCop(r.arancel))}
-    ${fila('Costo nacionalizado marítimo (informativo)', epCop(r.nacionalizado))}
-    ${fila('<strong>Precio marítimo por unidad (producto + flete)</strong>', '<strong>' + epCop(r.precioMaritimo) + '</strong>')}
+    ${fila('Costo de importación barco (producto + flete)', epCop(r.costoImportBarco))}
+    ${fila('<strong>Precio marítimo por unidad (nacionalizado)</strong>', '<strong>' + epCop(r.precioMaritimo) + '</strong>')}
     ${fila('<strong>Precio aéreo por unidad (producto + flete)</strong>', '<strong>' + (r.precioAereo == null ? 'SIN PESO' : epCop(r.precioAereo)) + '</strong>')}
   </tbody></table>
   <p>El precio del PDF es el de la modalidad elegida, sin impuestos.</p>`;
@@ -665,6 +704,7 @@ document.addEventListener('DOMContentLoaded', () => {
   ['epBuscar', 'epFiltroEstado'].forEach(id => $(id).addEventListener(id === 'epBuscar' ? 'input' : 'change', () => { epPagina = 1; epPintar(); }));
   $('epBtnPdfSel').addEventListener('click', () => epGenerarPDF([...epSel]));
   $('epBtnLimpiarSel').addEventListener('click', () => { epSel.clear(); epPintar(); });
+  $('epBtnRecalcular').addEventListener('click', epRecalcularTodas);
 
   $('epFormCostos').addEventListener('input', epActualizarResumen);
   $('epFormCostos').addEventListener('change', epActualizarResumen);
