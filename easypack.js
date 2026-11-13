@@ -229,11 +229,10 @@ function epPintar() {
         `<button type="button" class="cot-btn-tabla cot-btn-ico" data-ep-editar="${c.id}" title="Editar datos" aria-label="Editar datos de la cotización ${c.consecutivo}">${epIco('editar')}</button>`,
         `<button type="button" class="cot-btn-tabla cot-btn-ico cot-btn-peligro" data-ep-anular="${c.id}" title="Anular (conserva el consecutivo)" aria-label="Anular la cotización ${c.consecutivo}">${epIco('borrar')}</button>`
       ].join(''));
-    const foto = (c.imagenes || [])[0];
     return `<tr class="cot-fila${est === 'anulada' ? ' ep-anulada' : ''}" data-ep-ver="${c.id}" tabindex="0" title="Ver detalle">
       <td class="cot-col-sel"><input type="checkbox" data-ep-sel="${c.id}"${epSel.has(c.id) ? ' checked' : ''}${k && est !== 'anulada' ? '' : ' disabled'} aria-label="Seleccionar la cotización ${c.consecutivo}"></td>
       <td class="ep-col-no"><strong>${cotEsc(c.consecutivo)}</strong></td>
-      <td class="cot-col-cliente">${foto ? `<img class="pg-thumb" src="${cotEsc(foto)}" alt="">` : ''}<strong>${cotEsc(c.cliente)}</strong>${c.empresa ? `<br><small>${cotEsc(c.empresa)}${c.nit ? ' · NIT ' + cotEsc(c.nit) : ''}</small>` : ''}</td>
+      <td class="cot-col-cliente"><strong>${cotEsc(c.cliente)}</strong></td>
       <td class="cot-col-prod"><span class="cot-prod-txt">${cotEsc(c.nombreProducto)}${c.nombreProductoEn ? `<br><small>${cotEsc(c.nombreProductoEn)}</small>` : ''}</span></td>
       <td class="cot-num">${cotCantidadTxt(c)}</td>
       <td>${cotEsc(ocFechaTxt(c.creadoEn) || '—')}</td>
