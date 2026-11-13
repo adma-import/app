@@ -2372,7 +2372,7 @@ async function ocReservar(lista, datos) {
       ordenes[c.id] = { booth, fila: i, itemNo: x.itemNo, marca: x.marca, ...(manual ? { manual: true } : {}), fecha, creadaPor: sesionActual ? sesionActual.nombre : '' };
     });
     tx.set(rc, { booth: booth + 1, clientes }, { merge: true });
-    lista.forEach(c => tx.update(cotRef().doc(c.id), { orden: { ...ordenes[c.id], creadaEn: firebase.firestore.FieldValue.serverTimestamp() } }));
+    lista.forEach(c => tx.update(cotRef().doc(c.id), { orden: { ...ordenes[c.id], creadaEn: firebase.firestore.FieldValue.serverTimestamp() }, shippingMark: ordenes[c.id].marca, itemNo: ordenes[c.id].itemNo }));
   });
   return ordenes;
 }
@@ -2445,11 +2445,13 @@ async function cotGenerarOrden(ids) {
     const previos = {}; grupo.forEach(c => { previos[c.id] = { marca: c.orden.marca || '', itemNo: c.orden.itemNo || '' }; });
     const nuevos = await ocPedirDatos(grupo, previos, { titulo: `Orden de compra ${booth} · Shipping Mark e Item No`, boton: 'Aceptar y descargar PDF' });
     if (!nuevos) return false;
-    const cambios = grupo.filter(c => nuevos[c.id].marca !== previos[c.id].marca || nuevos[c.id].itemNo !== previos[c.id].itemNo);
+    const editado = c => nuevos[c.id].marca !== previos[c.id].marca || nuevos[c.id].itemNo !== previos[c.id].itemNo;
+    // También se completan los campos propios shippingMark / itemNo en las órdenes que todavía no los tenían
+    const cambios = grupo.filter(c => editado(c) || c.shippingMark !== nuevos[c.id].marca || c.itemNo !== nuevos[c.id].itemNo);
     try {
       if (cambios.length) {
         const batch = db.batch();
-        cambios.forEach(c => batch.update(cotRef().doc(c.id), { 'orden.marca': nuevos[c.id].marca, 'orden.itemNo': nuevos[c.id].itemNo, 'orden.manual': true }));
+        cambios.forEach(c => batch.update(cotRef().doc(c.id), { 'orden.marca': nuevos[c.id].marca, 'orden.itemNo': nuevos[c.id].itemNo, ...(editado(c) ? { 'orden.manual': true } : {}), shippingMark: nuevos[c.id].marca, itemNo: nuevos[c.id].itemNo }));
         await batch.commit();
       }
     } catch (err) { console.error(err); alert('No se pudieron guardar los cambios del Shipping Mark / Item No. Se descarga el PDF igualmente.'); }
@@ -2985,7 +2987,7 @@ async function ocDupCrear() {
       const nuevos = vals.map((v, i) => {
         const c = ocDupCotizacion(v);
         const manual = ocContarItem(clientes, v.cliente, v.marca, v.itemNo, cotEsStock(c));
-        return { ...c, creadoPor: sesionActual ? sesionActual.nombre : '', creadoEn: firebase.firestore.FieldValue.serverTimestamp(), duplicadaDe: ocDupOrigen.booth,
+        return { ...c, shippingMark: v.marca, itemNo: v.itemNo, creadoPor: sesionActual ? sesionActual.nombre : '', creadoEn: firebase.firestore.FieldValue.serverTimestamp(), duplicadaDe: ocDupOrigen.booth,
           orden: { booth, fila: i, itemNo: v.itemNo, marca: v.marca, ...(manual ? { manual: true } : {}), fecha, creadaPor: sesionActual ? sesionActual.nombre : '',
             creadaEn: firebase.firestore.FieldValue.serverTimestamp(), duplicadaDe: ocDupOrigen.booth } };
       });

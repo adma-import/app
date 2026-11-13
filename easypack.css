@@ -14,3 +14,9 @@
 
 /* Logo de envases del módulo EasyPack */
 .ep-logo { vertical-align: middle; margin-right: .5rem; color: var(--acento, #2563eb); }
+
+/* Tabla de EasyPack: solo Ver y Anular, la columna Acciones ocupa lo justo y no obliga a desplazar la tabla */
+#epGrid .cot-acciones-fila { display: flex; flex-wrap: nowrap; justify-content: flex-end; gap: 6px; }
+#epGrid .cot-acciones-fila .cot-btn-tabla { width: auto; }
+#epGrid .cot-tabla { min-width: 0; }
+#epGrid .cot-col-prod { max-width: 220px; }

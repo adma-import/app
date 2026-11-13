@@ -216,7 +216,7 @@ function epPintar() {
   const filas = pagina.map(c => {
     const est = epEstadoDe(c);
     const k = c.costosEp;
-    const precio = k && cotOk(k.precioUnidad) ? `${epCop(k.precioUnidad)} <small>(${EP_MODALIDAD[k.modalidad] || ''})</small>` : '—';
+    const precio = k && cotOk(k.precioUnidad) ? `$ ${epNum(k.precioUnidad, 2)} <small>(${EP_MODALIDAD[k.modalidad] || ''})</small>` : '—';
     const ver = `<button type="button" class="cot-btn-tabla" data-ep-ver="${c.id}" title="Ver el detalle de la cotización" aria-label="Ver la cotización ${c.consecutivo}">${epIco('ver')}<span>Ver</span></button>`;
     // En la tabla solo Ver y Anular; costos, PDF, compra finalizada, editar y copia están en el detalle
     const acc = ver + (est === 'anulada' || est === 'finalizada' ? ''
@@ -594,8 +594,6 @@ async function epGenerarPDF(ids) {
   const primera = lista[0];
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(0);
   doc.text(epFechaHoy(), X, y);
-  doc.setFont('helvetica', 'bold');
-  doc.text(lista.length > 1 ? `Cotización No. ${lista.map(c => c.consecutivo).join(', ')}` : `Cotización No. ${primera.consecutivo}`, DER, y, { align: 'right' });
   y += LH * 2;
 
   if (primera.empresa) {
