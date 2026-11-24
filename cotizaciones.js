@@ -112,6 +112,7 @@ function cotConstruirUI() {
       <label class="login-campo"><span>CBM por caja</span><input type="number" id="cotCbm" min="0" step="0.0001" required></label>
       <label class="login-campo"><span>Vía de transporte</span><select id="cotVia" required><option value="maritima">Marítima</option><option value="aerea">Aérea</option></select></label>
       <label class="login-campo" id="cotFleteWrap"><span>Precio del flete marítimo (COP por m³)</span><select id="cotFlete"></select></label>
+      <label class="login-campo" id="cotFleteFijoWrap"><span>Flete marítimo fijo (COP, valor total) — opcional</span><input type="number" id="cotFleteFijo" min="0" step="any" placeholder="Si lo llenas, se cobra este valor completo y no por m³"></label>
       <label class="login-campo" id="cotFleteAereoWrap" hidden><span>Valor total del flete aéreo (USD)</span><input type="number" id="cotFleteAereo" min="0" step="0.01"></label>
       <label class="login-campo"><span>Peso por caja (kg) — opcional</span><input type="number" id="cotPesoCaja" min="0" step="0.01"></label>
       <label class="login-campo"><span>Broker</span><input type="text" id="cotBroker" autocomplete="off"></label>
@@ -484,6 +485,7 @@ function cotAbrirCostos(id) {
   if (k.fleteId) sel.value = k.fleteId;
   document.getElementById('cotVia').value = k.viaFlete === 'aerea' ? 'aerea' : 'maritima';
   document.getElementById('cotFleteAereo').value = k.viaFlete === 'aerea' ? (k.fleteValor ?? '') : '';
+  document.getElementById('cotFleteFijo').value = k.viaFlete !== 'aerea' && cotOk(k.fleteFijo) ? k.fleteFijo : '';
   cotToggleVia();
   document.getElementById('cotRecompraWrap').hidden = c.origen !== 'Adma Company';
   document.getElementById('cotRecompra').checked = c.origen === 'Adma Company' && !!k.recompra && !k.productoNuevo;
@@ -512,6 +514,10 @@ async function cotGuardarCostos(e) {
   const flete = via === 'aerea'
     ? (aereo >= 0 ? { id: '', valor: aereo } : null)
     : cotFletesDisponibles(c).find(f => f.id === document.getElementById('cotFlete').value);
+  // Flete marítimo fijo (opcional): valor total en COP que se cobra completo, en lugar de COP por m³ × CBM
+  const fijoTxt = document.getElementById('cotFleteFijo').value.trim();
+  const fleteFijo = via === 'maritima' && fijoTxt !== '' ? parseFloat(fijoTxt) : null;
+  if (fleteFijo != null && !(fleteFijo >= 0)) return cotError('cotErrorCostos', 'El flete marítimo fijo debe ser un valor en pesos mayor o igual a cero.');
   if (typeof TASAS === 'undefined' || !(TASAS.usdCop > 0) || !(TASAS.usdRmb > 0))
     return cotError('cotErrorCostos', 'Aún no se cargan las tasas de cambio. Espera un momento e inténtalo de nuevo.');
   // cajas = cantidad de la cotización / unidades por caja (redondeado hacia arriba); total = cajas × unidades por caja
@@ -532,6 +538,7 @@ async function cotGuardarCostos(e) {
     viaFlete: via,
     fleteId: flete ? flete.id : '',
     fleteValor: flete ? Number(flete.valor) : null,
+    fleteFijo,
     pesoCaja: (v => Number.isNaN(v) ? null : v)(parseFloat(document.getElementById('cotPesoCaja').value)),
     envioPct: (v => v > 0 ? v : 0)(parseFloat(document.getElementById('cotEnvioPct').value)),
     broker: document.getElementById('cotBroker').value.trim(),
@@ -542,7 +549,7 @@ async function cotGuardarCostos(e) {
     usdRmb: TASAS.usdRmb
   };
   if (!(costos.totalUnidades > 0) || !(costos.valorUnidad >= 0) || !(costos.aumentoRmb >= 0) || !(costos.unidadesPorCaja > 0) ||
-      !(costos.cbmCaja >= 0) || !flete)
+      !(costos.cbmCaja >= 0) || (!flete && fleteFijo == null))
     return cotError('cotErrorCostos', 'Completa todos los campos con valores válidos y indica el flete.');
 
   if (c && (c.imagenes || []).join('').length + cotImagenesReales.join('').length > COT_MAX_CHARS_TOTAL + 100000)
@@ -614,7 +621,12 @@ function cotCalculos(c) {
   if (r.cajas != null && cotOk(k.cbmCaja)) r.cbmTotal = k.cbmCaja * r.cajas;
   if (cotOk(k.pesoCaja)) r.pesoCaja = k.pesoCaja;
   r.viaAerea = k.viaFlete === 'aerea';
-  if (cotOk(k.fleteValor)) {
+  if (!r.viaAerea && cotOk(k.fleteFijo)) {
+    // Marítima con flete fijo: se cobra el valor total escrito, sin multiplicarlo por el CBM
+    r.logistica360 = k.fleteFijo;
+    r.fleteFijoCop = k.fleteFijo;
+    if (u > 0) r.logisticaUnit = r.logistica360 / u;
+  } else if (cotOk(k.fleteValor)) {
     if (r.viaAerea) {
       // Aérea: el valor ingresado es el flete total en USD (se muestra en USD; en COP solo para el resumen)
       r.logistica360Usd = k.fleteValor;
@@ -675,6 +687,7 @@ function cotLineasCostos(c) {
       ['Cantidad de cajas', r.cajas, 0],
       ['Cantidad por caja', r.cantPorCaja, 0, ' unidades'],
       ['Peso por caja', r.pesoCaja, 2, ' kg'],
+      ['Flete marítimo fijo (valor total)', r.viaAerea ? null : r.fleteFijoCop, 2, ' COP', P],
       ['Logística unitaria en COP', r.viaAerea ? null : r.logisticaUnit, 2, ' COP', P],
       ['Logística unitaria en USD', r.viaAerea ? null : r.logisticaUnitUsd, 2, ' USD', P],
       ['Logística 360 COP', r.viaAerea ? null : r.logistica360, 2, ' COP', P],
@@ -1239,6 +1252,7 @@ async function cotGenerarPDFCotizacion(entrada) {
 function cotToggleVia() {
   const aerea = document.getElementById('cotVia').value === 'aerea';
   document.getElementById('cotFleteWrap').hidden = aerea;
+  document.getElementById('cotFleteFijoWrap').hidden = aerea;
   document.getElementById('cotFleteAereoWrap').hidden = !aerea;
   if (aerea) cotError('cotErrorCostos', '');
 }
